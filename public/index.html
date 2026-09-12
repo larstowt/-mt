@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI-medarbejdere</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🧑‍💼</text></svg>" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- ------------------------------------------------------------ sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <header class="sidebar-head">
+        <div class="workspace">
+          <span class="workspace-mark">🧑‍💼</span>
+          <div>
+            <div class="workspace-name" id="workspaceName">Mit hold</div>
+            <div class="provider-badge" id="providerBadge">forbinder…</div>
+          </div>
+        </div>
+        <button class="icon-btn" id="openSettings" title="Indstillinger" aria-label="Indstillinger">⚙︎</button>
+      </header>
+
+      <nav class="sidebar-scroll">
+        <div class="group">
+          <div class="group-head">
+            <span>Medarbejdere</span>
+            <button class="mini-btn" id="newAgent" title="Ny medarbejder">+</button>
+          </div>
+          <ul class="list" id="agentList"></ul>
+        </div>
+
+        <div class="group">
+          <div class="group-head">
+            <span>Teamrum</span>
+            <button class="mini-btn" id="newChannel" title="Nyt teamrum">+</button>
+          </div>
+          <ul class="list" id="channelList"></ul>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- --------------------------------------------------------------- chat -->
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-btn only-mobile" id="toggleSidebar" aria-label="Menu">☰</button>
+        <div class="topbar-title">
+          <span class="topbar-avatar" id="convAvatar"></span>
+          <div>
+            <div class="topbar-name" id="convName">Vælg en samtale</div>
+            <div class="topbar-sub" id="convSub"></div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="run-pill hidden" id="runPill"></span>
+          <button class="ghost-btn hidden" id="stopBtn">Stop</button>
+          <button class="ghost-btn" id="editBtn">Rediger</button>
+          <button class="ghost-btn" id="clearBtn">Ryd</button>
+          <button class="icon-btn only-mobile" id="togglePanel" aria-label="Rumpanel">⋯</button>
+        </div>
+      </header>
+
+      <section class="messages" id="messages"></section>
+
+      <div class="typing-row" id="typingRow"></div>
+
+      <footer class="composer">
+        <div class="mention-box hidden" id="mentionBox"></div>
+        <div class="composer-inner">
+          <textarea id="input" rows="1" placeholder="Skriv en besked…  (@navn for at spørge en bestemt)"></textarea>
+          <button class="send-btn" id="sendBtn" title="Send">↑</button>
+        </div>
+        <div class="composer-hint">
+          <label class="mode-picker" id="modePickerWrap">
+            Svar fra:
+            <select id="modePicker">
+              <option value="auto">de mest relevante</option>
+              <option value="all">alle i rummet</option>
+              <option value="mentions">kun dem jeg nævner</option>
+            </select>
+          </label>
+          <span>Enter sender · Shift+Enter ny linje</span>
+        </div>
+      </footer>
+    </main>
+
+    <!-- -------------------------------------------------------------- panel -->
+    <aside class="panel" id="panel">
+      <div class="panel-block">
+        <h3>I rummet</h3>
+        <ul class="member-list" id="memberList"></ul>
+        <button class="ghost-btn wide" id="editMembers">Rediger deltagere</button>
+      </div>
+
+      <div class="panel-block">
+        <h3>Intern diskussion</h3>
+        <p class="panel-hint">Lad medarbejderne diskutere med hinanden uden at du skriver imellem.</p>
+        <textarea id="discussionTopic" rows="3" placeholder="Hvad skal de diskutere?"></textarea>
+        <div class="field-row">
+          <label>Runder
+            <select id="discussionRounds">
+              <option>1</option><option>2</option><option selected>3</option>
+              <option>4</option><option>5</option><option>6</option>
+            </select>
+          </label>
+          <label>Rækkefølge
+            <select id="discussionMode">
+              <option value="round-robin">alle på skift</option>
+              <option value="auto">ordstyrer vælger</option>
+            </select>
+          </label>
+        </div>
+        <label class="checkbox"><input type="checkbox" id="discussionSummary" checked /> Afslut med opsamling</label>
+        <button class="primary-btn wide" id="startDiscussion">Start diskussion</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- --------------------------------------------------------------- dialoger -->
+  <dialog class="modal" id="agentModal">
+    <form method="dialog" id="agentForm">
+      <h2 id="agentModalTitle">Ny medarbejder</h2>
+      <div class="field-row">
+        <label class="grow">Navn<input id="agentName" required maxlength="40" placeholder="Astrid" /></label>
+        <label style="width:5.5rem">Ikon<input id="agentEmoji" maxlength="4" placeholder="🧭" /></label>
+      </div>
+      <label>Rolle / titel<input id="agentRole" maxlength="60" placeholder="Projektleder" /></label>
+      <label>Personlighed og arbejdsområde
+        <textarea id="agentPersona" rows="6" placeholder="Hvordan tænker og skriver denne medarbejder? Hvad er vedkommende ansvarlig for?"></textarea>
+      </label>
+      <div class="field-row">
+        <label class="grow">Model (valgfri – ellers standardmodellen)
+          <input id="agentModel" placeholder="fx claude-sonnet-5" />
+        </label>
+        <label style="width:8rem">Temperatur<input id="agentTemp" type="number" min="0" max="1.5" step="0.1" value="0.7" /></label>
+        <label style="width:5rem">Farve<input id="agentColor" type="color" value="#7c5cff" /></label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="danger-btn hidden" id="deleteAgent">Slet</button>
+        <span class="grow"></span>
+        <button type="button" class="ghost-btn" data-close>Annullér</button>
+        <button type="submit" class="primary-btn">Gem</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="channelModal">
+    <form method="dialog" id="channelForm">
+      <h2 id="channelModalTitle">Nyt teamrum</h2>
+      <label>Navn<input id="channelName" required maxlength="40" placeholder="produkt" /></label>
+      <label>Emne<input id="channelTopic" maxlength="120" placeholder="Hvad handler rummet om?" /></label>
+      <fieldset>
+        <legend>Deltagere</legend>
+        <div class="member-picker" id="channelMembers"></div>
+      </fieldset>
+      <div class="modal-actions">
+        <button type="button" class="danger-btn hidden" id="deleteChannel">Slet</button>
+        <span class="grow"></span>
+        <button type="button" class="ghost-btn" data-close>Annullér</button>
+        <button type="submit" class="primary-btn">Gem</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="settingsModal">
+    <form method="dialog" id="settingsForm">
+      <h2>Indstillinger</h2>
+      <label>Navn på arbejdspladsen<input id="setWorkspace" maxlength="40" /></label>
+      <label>Dit navn (sådan tiltaler de dig)<input id="setUserName" maxlength="40" /></label>
+      <label>Fælles baggrund som alle medarbejdere kender
+        <textarea id="setContext" rows="5" placeholder="Fx: Vi bygger et SaaS-produkt til danske tandlægeklinikker. 6 ansatte. Lancering til foråret."></textarea>
+      </label>
+      <p class="panel-hint" id="providerInfo"></p>
+      <div class="modal-actions">
+        <span class="grow"></span>
+        <button type="button" class="ghost-btn" data-close>Luk</button>
+        <button type="submit" class="primary-btn">Gem</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "ai-medarbejdere",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-medarbejdere: et Grok-lignende arbejdsrum hvor du kan skrive med hver enkelt medarbejder og lade dem diskutere internt.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.6.0"
+  }
+}
