@@ -24,14 +24,20 @@ teamrum, og sætte dem til at **diskutere internt** med hinanden mens du kigger 
 
 ## Kom i gang
 
+Kræver **Node 20.12 eller nyere** (`node -v`). Intet andet – ingen `npm install`.
+
 ```bash
-git clone <dette-repo>
-cd -mt
+git clone -b claude/grok-like-agent-interface-j456yb \
+  https://github.com/larstowt/-mt.git ai-medarbejdere
+cd ai-medarbejdere
 cp .env.example .env      # og sæt din API-nøgle ind
 npm start
 ```
 
-Åbn <http://127.0.0.1:4173>.
+Åbn <http://127.0.0.1:4173>. Stop med Ctrl+C.
+
+Vil du have serveren til at genstarte automatisk når du retter i koden: `npm run dev`.
+Vil du have en anden port: `PORT=3000 npm start`.
 
 Uden API-nøgle starter appen i **demo-tilstand** med simulerede svar, så du kan prøve hele
 interfacet – diskussioner, streaming, det hele – uden en konto.
