@@ -33,17 +33,19 @@ if (-not (Test-Path '.env')) {
 }
 
 function Set-EnvKey($name, $value) {
-  $lines = Get-Content '.env'
+  $lines = @(Get-Content '.env')
   $done = $false
-  $out = foreach ($line in $lines) {
+  $out = @(foreach ($line in $lines) {
     if ($line -match "^$name=") { "$name=$value"; $done = $true } else { $line }
-  }
+  })
   if (-not $done) { $out += "$name=$value" }
-  Set-Content '.env' $out -Encoding UTF8
+  # UTF-8 uden BOM, ens paa PowerShell 5.1 og 7.
+  $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+  [System.IO.File]::WriteAllLines((Resolve-Path '.env').Path, $out, $utf8NoBom)
 }
 
 # ---------------------------------------------------------------- 3. API-noegle
-$hasKey = (Get-Content '.env') -match '^(ANTHROPIC_API_KEY|XAI_API_KEY|OPENAI_API_KEY)=.+'
+$hasKey = @(Get-Content '.env') -match '^(ANTHROPIC_API_KEY|XAI_API_KEY|OPENAI_API_KEY)=.+'
 if ($hasKey) {
   Write-Host 'OK  Der er allerede en API-noegle i .env' -ForegroundColor Green
 } else {
@@ -65,8 +67,9 @@ if ($hasKey) {
 
   if ($keyName) {
     $secure = Read-Host 'Indsaet din noegle (den vises ikke mens du skriver)' -AsSecureString
-    $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
-      [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try { $plain = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
     if ($plain -and $plain.Trim()) {
       Set-EnvKey $keyName $plain.Trim()
       Write-Host "OK  Gemte $keyName i .env" -ForegroundColor Green
@@ -86,12 +89,16 @@ Write-Host ''
 Write-Host "Klar. Starter paa $url  (Ctrl+C for at stoppe)" -ForegroundColor Green
 Write-Host ''
 
-Start-Job -ScriptBlock {
-  param($u)
-  for ($i = 0; $i -lt 40; $i++) {
-    try { Invoke-WebRequest "$u/api/state" -UseBasicParsing -TimeoutSec 2 | Out-Null; Start-Process $u; break }
-    catch { Start-Sleep -Milliseconds 250 }
-  }
-} -ArgumentList $url | Out-Null
+try {
+  Start-Job -ScriptBlock {
+    param($u)
+    for ($i = 0; $i -lt 40; $i++) {
+      try { Invoke-WebRequest "$u/api/state" -UseBasicParsing -TimeoutSec 2 | Out-Null; Start-Process $u; break }
+      catch { Start-Sleep -Milliseconds 250 }
+    }
+  } -ArgumentList $url | Out-Null
+} catch {
+  Write-Host "Kunne ikke aabne browseren automatisk - gaa selv til $url" -ForegroundColor Yellow
+}
 
 npm start
