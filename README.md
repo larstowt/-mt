@@ -26,10 +26,28 @@ teamrum, og sætte dem til at **diskutere internt** med hinanden mens du kigger 
 
 Kræver **Node 20.12 eller nyere** (`node -v`). Intet andet – ingen `npm install`.
 
+### Den nemme vej
+
 ```bash
 git clone -b claude/grok-like-agent-interface-j456yb \
   https://github.com/larstowt/-mt.git ai-medarbejdere
 cd ai-medarbejdere
+npm run setup
+```
+
+Scriptet tjekker din Node-version, laver `.env`, spørger hvilken model du vil bruge og
+beder om din API-nøgle (den vises ikke mens du skriver og ender kun i `.env`, som ikke
+kommer med i git). Derefter starter det serveren og åbner browseren.
+
+På Windows uden bash:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
+```
+
+### Eller i hånden
+
+```bash
 cp .env.example .env      # og sæt din API-nøgle ind
 npm start
 ```
