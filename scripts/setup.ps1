@@ -1,6 +1,10 @@
 # Opsaetning af AI-medarbejdere paa Windows.
 # Koeres med:  powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 $ErrorActionPreference = 'Stop'
+# PowerShell 7.4+ goer ellers en exitkode fra npm (fx efter Ctrl+C) til en roed fejl.
+if (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+  $PSNativeCommandUseErrorActionPreference = $false
+}
 Set-Location (Join-Path $PSScriptRoot '..')
 
 Write-Host ''
@@ -15,14 +19,22 @@ if (-not $node) {
   exit 1
 }
 
-$nodeVersion = (node -v)
-& node -e 'const [maj, min] = process.versions.node.split(".").map(Number); process.exit(maj > 20 || (maj === 20 && min >= 12) ? 0 : 1)'
-if ($LASTEXITCODE -ne 0) {
-  Write-Host "Node $nodeVersion er for gammel - der skal bruges 20.12 eller nyere." -ForegroundColor Red
-  Write-Host 'Hent LTS-versionen paa https://nodejs.org og koer dette script igen.'
-  exit 1
+# Versionen sammenlignes i PowerShell. Sendes udtrykket til "node -e" i stedet,
+# fjerner PowerShell anfoerselstegnene undervejs og udtrykket gaar i stykker.
+$nodeVersion = "$(node -v)".Trim()
+$cleaned = $nodeVersion -replace '^v', '' -replace '[-+].*$', ''
+$parsed = $null
+if ([version]::TryParse($cleaned, [ref]$parsed)) {
+  if ($parsed -lt [version]'20.12.0') {
+    Write-Host "Node $nodeVersion er for gammel - der skal bruges 20.12 eller nyere." -ForegroundColor Red
+    Write-Host 'Hent LTS-versionen paa https://nodejs.org og koer dette script igen.'
+    exit 1
+  }
+  Write-Host "OK  Node $nodeVersion" -ForegroundColor Green
+} else {
+  # Kan versionen ikke laeses, saa stop ikke - proev bare at koere.
+  Write-Host "?   Kunne ikke laese Node-versionen ($nodeVersion) - fortsaetter" -ForegroundColor Yellow
 }
-Write-Host "OK  Node $nodeVersion" -ForegroundColor Green
 
 # ------------------------------------------------------------------- 2. .env
 if (-not (Test-Path '.env')) {
