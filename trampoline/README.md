@@ -1,0 +1,49 @@
+# Trampolin – en hyldest til *Walaber's Trampoline*
+
+Et trampolinspil til browseren, der også kører på iPhone og Android. Spillet er skrevet i ren HTML5 Canvas og JavaScript uden byggetrin og uden eksterne afhængigheder.
+
+## Kør spillet
+
+- **Hurtigst:** åbn `trampoline/index.html` direkte i browseren.
+- **Som app på mobilen:** læg mappen på en HTTPS-server, fx GitHub Pages, Netlify eller Cloudflare Pages. Åbn siden på telefonen, og vælg *Føj til hjemmeskærm*. Så kører spillet i fuld skærm og virker også offline (PWA med service worker).
+- **Lokalt med server:** `python3 -m http.server -d trampoline 8080` og åbn http://localhost:8080.
+
+## Styring
+
+| | Tastatur | Mobil |
+|---|---|---|
+| Sats (pump højde) | Mellemrum / ↑ | SATS |
+| Vip / rotér | ← → | ◀ ▶ |
+| Lukket (tuck) | Z | LUKKET |
+| Hoftebøjet (pike) | X | HOFTE |
+| Skrue (twist) | C / Shift | SKRUE |
+| Stop på dugen | ↓ | STOP |
+| Pause | Esc / P | ❚❚ |
+
+Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = skrue).
+
+## Hvad er nyt i forhold til originalen
+
+- **Tre positioner:** strakt, **hoftebøjet** og lukket.
+- **Skruer i alle positioner**, også lukket og hoftebøjet. Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
+- **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
+- **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.
+- **Pointsystem som i FIG-trampolin:** D (sværhedsgrad), E (udførelse med fradrag), T (flyvetid) og H (placering). Springene får FIG-koder, fx `8 2 0 o` for en hel-ind lukket, og rigtige navne som Barani, Rudi, Randy, Miller og Triffus.
+- **Spiltyper:** fri leg med kombinationer, 60 sekunders tidsløb, konkurrence med 10 elementer og 20 udfordringer fordelt på 4 baner (Klubhallen, Solnedgang, Nordlys og VM-finalen).
+- **Færdigheder:** XP og stjerner giver point til Kraft, Rotation, Skrue, Smidighed, Luftkontrol og Landing.
+- **Udfordr en ven:** del et link efter et tidsløb, en rutine eller et spring. Al data ligger i linket, så det kræver ingen server.
+
+## Kode
+
+| Fil | Indhold |
+|---|---|
+| `js/body.js` | Leddelt krop, positioner, massemidtpunkt og inertimomenter |
+| `js/athlete.js` | Fysik: dug, flugt, skruer, landing og styrt |
+| `js/tricks.js` | Genkendelse af spring, FIG-koder, navne og sværhedsgrad |
+| `js/scoring.js` | Bedømmelse (D/E/T/H) og point |
+| `js/challenges.js` | Baner og udfordringer |
+| `js/game.js` | Spilløkke, spiltyper og demo-bot |
+| `js/render.js`, `js/arenas.js` | Grafik |
+| `js/ui.js`, `js/input.js`, `js/audio.js`, `js/share.js` | Menuer, input, lyd og udfordringslinks |
+
+Tests: `npm run test:trampolin` (fra roden af repoet).
