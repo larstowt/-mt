@@ -31,7 +31,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
 - **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.
 - **Pointsystem som i FIG-trampolin:** D (sværhedsgrad), E (udførelse med fradrag), T (flyvetid) og H (placering). Springene får FIG-koder, fx `8 2 0 o` for en hel-ind lukket, og rigtige navne som Barani, Rudi, Randy, Miller og Triffus.
-- **Spiltyper:** fri leg med kombinationer, 60 sekunders tidsløb, konkurrence med 10 elementer og 25 udfordringer fordelt på 4 baner (også med rygfald, ball-out og cody) (Klubhallen, Solnedgang, Nordlys og VM-finalen).
+- **Spiltyper:** fri leg med kombinationer, 60 sekunders tidsløb, konkurrence med 10 elementer og 25 udfordringer fordelt på 4 baner (Klubhallen, Solnedgang, Nordlys og VM-finalen), også med rygfald, ball-out og cody.
 - **Færdigheder:** XP og stjerner giver point til Kraft, Rotation, Skrue, Smidighed, Luftkontrol og Landing.
 - **Udfordr en ven:** del et link efter et tidsløb, en rutine eller et spring. Al data ligger i linket, så det kræver ingen server.
 
