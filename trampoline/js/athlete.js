@@ -41,6 +41,8 @@
       this.tracker = new TR.TrickTracker();
       this.lastLanding = null;
       this.crashReason = null;
+      this.pushPrev = false;
+      this.newContact(0, false);
       this.body = B.solve(this.pose, this.body);
       this.y = this.feetY + this.standOffset();
       this.updateWorld();
@@ -102,6 +104,47 @@
       return null;
     }
 
+    // Ny kontakt med dugen: nulstil timingen af satsen.
+    newContact(speed, held) {
+      this.sats = { t: 0, speed, held, pressT: null, bottomT: null, q: null };
+    }
+
+    // Timing af satsen: bedst at trykke lige omkring bunden af dugen.
+    judgeSats() {
+      const S = this.sats;
+      if (S.q != null || S.bottomT == null) return;
+      let q = null, label = '';
+      if (S.held) { q = 0.7; label = 'For tidligt'; }
+      else if (S.pressT != null) {
+        const diff = S.pressT - S.bottomT; // negativ = før bunden
+        if (diff >= -0.12 && diff <= 0.05) { q = 1; label = 'Perfekt sats!'; }
+        else if (diff >= -0.22 && diff <= 0.12) { q = 0.85; label = 'God sats'; }
+        else if (diff < 0) { q = 0.7; label = 'For tidligt'; }
+        else { q = 0.55; label = 'For sent'; }
+      }
+      if (q == null) return;
+      S.q = q;
+      this.emit('sats', { q, label, quiet: S.speed < 3 });
+    }
+
+    // Sekunder til dugens bund (negativ efter bunden); null når det ikke er relevant.
+    satsTiming() {
+      const w = Math.sqrt(BED.K), e = GRAV / BED.K;
+      const toBottom = (x, u) => (Math.PI / 2 - Math.atan2(x * w, u)) / w;
+      if (this.state === 'bed') {
+        const S = this.sats;
+        if (S.bottomT != null) return -(S.t - S.bottomT);
+        return toBottom(Math.max(0, -this.feetY) - e, Math.max(0.01, -this.vy));
+      }
+      if (this.state === 'air' && this.vy < 0) {
+        const h = Math.max(0, B.lowest(this.world).y);
+        const tl = (this.vy + Math.sqrt(this.vy * this.vy + 2 * GRAV * h)) / GRAV;
+        const u = -(this.vy - GRAV * tl);
+        return tl + toBottom(-e, u);
+      }
+      return null;
+    }
+
     updateWorld() { B.toWorld(this.body, this.psi, this.phi, this.x, this.y + this.yCorr, this.world); }
 
     approachPose(dt, hip, knee, hand, rate) {
@@ -116,6 +159,7 @@
       if (this.state === 'bed') this.stepBed(dt, input);
       else if (this.state === 'air') this.stepAir(dt, input);
       else this.stepCrash(dt);
+      this.pushPrev = !!input.push;
       this.yCorr = TR.approach(this.yCorr, 0, Math.max(0.6, Math.abs(this.yCorr) * 10) * dt);
       this.updateWorld();
     }
@@ -145,15 +189,25 @@
       }
       this.psi = TR.approach(this.psi, this.psiTarget, 6 * dt);
 
+      // Satsens timing: et nyt tryk registreres; holdes knappen fra luften, er det for tidligt.
+      const S = this.sats;
+      S.t += dt;
+      if (S.held && !inp.push) S.held = false;
+      if (inp.push && !this.pushPrev && !S.held && S.pressT == null) S.pressT = S.t;
+      if (S.pressT != null && S.bottomT == null && this.vy >= 0) S.bottomT = S.pressT; // fra stilstand
+      this.judgeSats();
+
       let a = -GRAV + BED.K * d - (inp.kill ? 9 : BED.C) * this.vy;
-      if (inp.push && !inp.kill && d > 0 && this.vy > -1.2) {
+      if (inp.push && !inp.kill && d > 0 && this.vy >= 0 && S.q != null) {
         const E = 0.5 * this.vy * this.vy + 0.5 * BED.K * d * d - GRAV * d;
         const apex = Math.max(0, E) / GRAV;
         // Fra ryg eller mave kan man ikke sætte af med benene, så satsen er svagere.
-        a += fx.pushAcc * (this.contact === 'feet' ? 1 : 0.6) * TR.clamp(1 - apex / fx.maxApex, 0, 1);
+        a += fx.pushAcc * S.q * (this.contact === 'feet' ? 1 : 0.6) * TR.clamp(1 - apex / fx.maxApex, 0, 1);
       }
+      const vyPrev = this.vy;
       this.vy += a * dt;
       this.feetY += this.vy * dt;
+      if (vyPrev < 0 && this.vy >= 0 && S.bottomT == null) { S.bottomT = S.t; this.judgeSats(); }
       if (this.feetY >= 0) {
         if (this.vy > 0.8) { this.y = this.feetY + this.contactOffset(); this.takeoff(); return; }
         this.feetY = 0;
@@ -164,6 +218,7 @@
 
     takeoff() {
       const fx = this.fx;
+      if (this.sats.q == null && this.sats.speed >= 3) this.emit('sats', { q: 0, label: 'Ingen sats', quiet: false });
       const vmax = Math.sqrt(2 * GRAV * fx.maxApex);
       this.vy = Math.min(this.vy, vmax);
       const tilt = this.tilt();
@@ -281,6 +336,7 @@
       this.body = B.solve(this.pose, this.body);
       this.y = this.feetY + this.contactOffset();
       this.yCorr += oldY - this.y;
+      this.newContact(-this.vy, !!this.pushPrev);
       this.emit('land', { skill, landing, speed: -this.vy });
     }
 

@@ -62,6 +62,11 @@
       this.tone(90, 0.3, { vol: 0.3, slide: 0.5 });
       [400, 330, 260].forEach((f, i) => this.tone(f, 0.18, { type: 'square', vol: 0.04, delay: 0.15 + i * 0.12 }));
     }
+    sats(q) {
+      if (q >= 1) { this.tone(990, 0.12, { type: 'triangle', vol: 0.09 }); this.tone(1480, 0.14, { type: 'sine', vol: 0.06, delay: 0.04 }); }
+      else if (q >= 0.85) this.tone(740, 0.1, { type: 'triangle', vol: 0.07 });
+      else this.tone(260, 0.12, { type: 'square', vol: 0.03 });
+    }
     combo(n) { this.tone(440 * Math.pow(1.12, Math.min(n, 12)), 0.12, { type: 'triangle', vol: 0.08 }); }
     click() { this.tone(900, 0.05, { type: 'triangle', vol: 0.05 }); }
     cheer() { this.noise(1.6, { freq: 1600, vol: 0.12, type: 'bandpass', q: 0.4 }); }

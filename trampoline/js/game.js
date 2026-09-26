@@ -307,6 +307,15 @@
         R.popup(info.reason, { color: '#ff6b81', size: 0.8 });
         if (this.mode) this.mode.onCrash(info);
       });
+      // Tilbagemelding på satsens timing
+      this.satsStreak = 0;
+      a.on('sats', ({ q, label, quiet }) => {
+        if (this.demo || quiet) return;
+        if (q >= 1) this.satsStreak++; else this.satsStreak = 0;
+        const color = q >= 1 ? '#ffd166' : q >= 0.85 ? '#80ffdb' : q > 0 ? '#ffb4c1' : '#9aa4bf';
+        R.floater(label, color, q >= 1 && this.satsStreak > 1 ? `x${this.satsStreak}` : '');
+        if (q > 0) this.sfx.sats(q);
+      });
       a.on('takeoff', ({ vy }) => { if (vy > 6) this.sfx.whoosh(Math.min(1, vy / 10)); });
       a.on('apex', ({ height }) => {
         if (this.demo) { this.bot.onApex(height); return; }

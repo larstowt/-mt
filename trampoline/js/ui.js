@@ -94,7 +94,7 @@
       this.lastStart = fn;
       if (!this.save.seenHelp) {
         this.save.seenHelp = true; TR.persist(this.save);
-        this.toast(this.touch ? 'Hold SATS for at hoppe. ◀ ▶ vipper, LUKKET/HOFTE/SKRUE i luften.' : 'Hold MELLEMRUM for at hoppe. ← → vipper, Z lukket, X hoftebøjet, C skrue.', 6000);
+        this.toast(this.touch ? 'Tryk SATS når ringen på dugen bliver gul. ◀ ▶ vipper, LUKKET/HOFTE/SKRUE i luften.' : 'Tryk MELLEMRUM når ringen på dugen bliver gul. ← → vipper, Z lukket, X hoftebøjet, C skrue.', 6000);
       }
       fn();
     }

@@ -25,7 +25,7 @@
     {
       id: 'hall', name: 'Klubhallen', need: 0, tagline: 'Hvor det hele starter.',
       challenges: [
-        { id: 'h1', title: 'Første hop', desc: 'Pump dig op til 2 meters højde.', type: 'height', target: 2.0, hint: 'Hold MELLEMRUM (SATS) nede, mens du er på dugen.' },
+        { id: 'h1', title: 'Første hop', desc: 'Pump dig op til 2 meters højde.', type: 'height', target: 2.0, hint: 'Tryk SATS (mellemrum), når ringen på dugen rammer målet og bliver gul.' },
         { id: 'h2', title: 'Salto baglæns', desc: 'Land en salto baglæns – valgfri position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0 }, hint: 'Vip med piletasten på dugen, luk (Z) i luften og åbn før landing.' },
         { id: 'h3', title: 'Salto forlæns', desc: 'Land en salto forlæns.', type: 'skill', match: { dir: 'F', q: 4, halves: 0 }, hint: 'Vip den anden vej – forlæns afhænger af hvilken vej du vender.' },
         { id: 'h4', title: 'Hoftebøjet', desc: 'Land en salto baglæns i hoftebøjet position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0, shape: '<' }, hint: 'Hold X for hoftebøjet.' },

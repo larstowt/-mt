@@ -24,6 +24,7 @@
       this.shake = 0;
       this.particles = [];
       this.popups = [];
+      this.floaters = [];
       this.trail = [];
       this.trailTimer = 0;
       this.safeBottom = 0;
@@ -81,12 +82,15 @@
       this.heightMeter(ctx, cam);
       this.trampolineBack(ctx, cam, a, game.arena);
       this.shadow(ctx, cam, a);
+      if (!game.demo) this.satsRing(ctx, cam, a);
+      this.lastAthleteX = a.x;
       this.updateTrail(a, dt);
       this.drawTrail(ctx, cam, game.look);
       this.drawAthlete(ctx, cam, a.world, game.look, 1);
       this.trampolineFront(ctx, cam, a, game.arena);
       this.updateParticles(dt);
       this.drawParticles(ctx, cam);
+      this.drawFloaters(ctx, cam, dt);
       this.drawPopups(ctx, cam, dt);
       this.vignette(ctx, cam);
     }
@@ -258,6 +262,62 @@
       ctx.beginPath();
       ctx.ellipse(cam.sx(a.x), y, 0.45 * cam.ppm * (0.6 + 0.4 * k), 0.08 * cam.ppm, 0, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    // Timing-ring: skrumper ind mod målet og rammer det i dugens bund – dér skal man trykke SATS.
+    satsRing(ctx, cam, a) {
+      if (a.state === 'crash' || Math.abs(a.x) > BED.half) return;
+      const t = a.satsTiming();
+      if (t == null || t > 0.6 || t < -0.25) return;
+      const S = a.sats;
+      const cx = cam.sx(a.x), cy = cam.sy(-this.bedProfile(a.x, a) * 0.85);
+      const base = 0.32 * cam.ppm;
+      const ry = 0.3;
+      ctx.save();
+      ctx.lineWidth = Math.max(2, 0.03 * cam.ppm);
+      // Målet
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath(); ctx.ellipse(cx, cy, base, base * ry, 0, 0, Math.PI * 2); ctx.stroke();
+      if (t >= 0) {
+        const near = t < 0.12;
+        const r = base * (1 + 3.2 * (t / 0.6));
+        ctx.strokeStyle = near ? '#ffd166' : 'rgba(76,201,240,0.9)';
+        ctx.globalAlpha = TR.clamp(1.3 - t / 0.6, 0.25, 1);
+        ctx.lineWidth = Math.max(2, (near ? 0.05 : 0.035) * cam.ppm);
+        ctx.beginPath(); ctx.ellipse(cx, cy, r, r * ry, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (S && S.q == null) {
+        // Bunden er passeret uden tryk: nu er det for sent
+        ctx.globalAlpha = 1 + t * 3;
+        ctx.fillStyle = 'rgba(255,209,102,0.45)';
+        ctx.beginPath(); ctx.ellipse(cx, cy, base, base * ry, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    floater(text, color, sub) {
+      this.floaters.push({ text, color, sub: sub || '', t: 0, max: 1.1 });
+      if (this.floaters.length > 2) this.floaters.shift();
+    }
+    drawFloaters(ctx, cam, dt) {
+      if (!this.floaters.length) return;
+      ctx.save();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const x = cam.W / 2 + (this.lastAthleteX || 0) * cam.ppm;
+      for (const f of this.floaters) {
+        f.t += dt;
+        const k = f.t / f.max;
+        const y = cam.sy(-0.35) + 18 + f.t * 18;
+        ctx.globalAlpha = k > 0.6 ? Math.max(0, (1 - k) / 0.4) : 1;
+        const fs = Math.round(Math.min(26, Math.max(15, cam.W / 45)));
+        ctx.font = `900 ${fs}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
+        ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(10,12,30,0.85)';
+        const text = f.sub ? `${f.text} ${f.sub}` : f.text;
+        ctx.strokeText(text, x, y);
+        ctx.fillStyle = f.color;
+        ctx.fillText(text, x, y);
+      }
+      this.floaters = this.floaters.filter((f) => f.t < f.max);
+      ctx.restore();
     }
 
     heightMeter(ctx, cam) {

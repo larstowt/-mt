@@ -12,7 +12,7 @@ Et trampolinspil til browseren, der også kører på iPhone og Android. Spillet 
 
 | | Tastatur | Mobil |
 |---|---|---|
-| Sats (pump højde) | Mellemrum / ↑ | SATS |
+| Sats (tryk når ringen bliver gul) | Mellemrum / ↑ | SATS |
 | Vip / rotér | ← → | ◀ ▶ |
 | Lukket (tuck) | Z | LUKKET |
 | Hoftebøjet (pike) | X | HOFTE |
@@ -26,6 +26,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 
 - **Tre positioner:** strakt, **hoftebøjet** og lukket.
 - **Landing på ryg og mave:** rygfald og mavefald, og videre derfra, fx til fødderne, ball-out, cody og kaboom.
+- **Timing af satsen:** en ring på dugen viser, hvornår man skal trykke SATS, og man får at vide, om satsen var perfekt, god, for tidlig eller for sen. Perfekt timing giver mest højde.
 - **Rotationsmåler:** viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket.
 - **Skruer i alle positioner**, også lukket og hoftebøjet. Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
