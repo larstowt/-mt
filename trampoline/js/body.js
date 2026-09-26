@@ -37,6 +37,8 @@
   // Håndmål relativt til skulderen: [frem, op, udad]
   const HAND = {
     side: [0.05, -0.6, 0.1],
+    // Strakt: helt strakte arme ned langs siden, tæt ind til kroppen
+    straight: [0.0, -0.64, 0.015],
     up: [0.03, 0.61, 0.03],
     twist: [0.17, -0.2, -0.13],
     crash: [0.35, 0.25, 0.35],

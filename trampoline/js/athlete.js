@@ -256,8 +256,8 @@
       if (shape === 'tuck') hand = B.legGripTarget(this.pose, 0.3);
       else if (shape === 'pike') hand = B.legGripTarget(this.pose, 0.8);
       else if (inp.twist || this.twistRate > 0.5) hand = B.HAND.twist;
-      else if (this.control === 'arcade') hand = inp.straight ? B.HAND.up : B.HAND.side;
-      else hand = this.airT < 0.3 ? B.HAND.up : B.HAND.side;
+      else if (this.control === 'arcade') hand = inp.straight ? B.HAND.straight : B.HAND.side;
+      else hand = this.airT < 0.25 ? B.HAND.up : B.HAND.straight;
       this.approachPose(dt, tg.hip, tg.knee, hand, fx.shapeRate);
       this.body = B.solve(this.pose, this.body);
 
