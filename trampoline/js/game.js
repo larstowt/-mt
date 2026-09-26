@@ -271,7 +271,7 @@
       this.demo = true;
       this.bot = new DemoBot();
       this.paused = false;
-      this.timeScale = 0.75; // spillet kører lidt langsommere end virkeligheden
+      this.timeScale = 0.6; // spillet kører langsommere end virkeligheden
       this.acc = 0; this.last = 0;
       this.dirty = false;
       this.ui = null;
