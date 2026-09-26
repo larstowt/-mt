@@ -4,7 +4,8 @@
   const TR = G.TR;
   const B = TR.Body;
   const GRAV = 9.81;
-  const BED = (TR.BED = { half: 2.14, width: 1.07, frameHalf: 2.62, K: 85, C: 0.35, floor: -1.15 });
+  // FIG-mål: dug 4,28 × 2,14 m, ramme 5,05 × 2,91 m, 1,15 m over gulvet
+  const BED = (TR.BED = { half: 2.14, width: 1.07, frameHalf: 2.525, frameWidth: 1.455, K: 85, C: 0.35, floor: -1.15 });
 
   const STRAIGHT = B.solve({ hip: 0, knee: 0, hand: B.HAND.side });
   const I_REF = STRAIGHT.Isom;
@@ -431,6 +432,10 @@
       // Et tryk lige før landingen tæller som et rigtigt tryk (med negativ tid), ikke som at holde knappen nede.
       const since = this.airT - (this.airPressAt == null ? -99 : this.airPressAt);
       const fresh = this.pushPrev && since <= 0.15;
+      // Landing væk fra midten koster højde (energi): intet inden for 35 cm, op til 25 % ved kanten.
+      const off = TR.clamp((Math.abs(this.x) - 0.35) / (BED.half - 0.35), 0, 1);
+      if (off > 0) this.vy *= Math.sqrt(1 - 0.25 * off);
+      landing.heightLoss = 0.25 * off;
       this.newContact(-this.vy, !!this.pushPrev && !fresh);
       if (fresh) this.sats.pressT = -since;
       this.emit('land', { skill, landing, speed: -this.vy });

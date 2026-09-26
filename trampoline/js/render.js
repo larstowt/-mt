@@ -109,7 +109,7 @@
 
     trampolineBack(ctx, cam, a, arena) {
       const pad = TR.Arenas.pad(arena);
-      const fh = BED.frameHalf, fz = (BED.width + 0.32) * DY;
+      const fh = BED.frameHalf, fz = BED.frameWidth * DY;
       // Bageste ben
       ctx.fillStyle = '#5b6474';
       for (const x of [-2.3, 0, 2.3]) {
@@ -185,7 +185,7 @@
 
     trampolineFront(ctx, cam, a, arena) {
       const pad = TR.Arenas.pad(arena);
-      const fh = BED.frameHalf, fz = -(BED.width + 0.32) * DY;
+      const fh = BED.frameHalf, fz = -BED.frameWidth * DY;
       // Dugens underside/skygge under forkanten (skjuler fødderne når dugen trykkes ned)
       ctx.beginPath();
       const n = 48;

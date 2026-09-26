@@ -155,7 +155,7 @@
     update(dt) {
       if (this.reached > 0) {
         this.reached -= dt;
-        if (this.reached <= 0 || this.bestH >= this.def.target + 1.6) this.done(TR.Challenges.starsFor(this.def, this.bestH), [['Bedste højde', `${TR.fmt(this.bestH)} m`]]);
+        if (this.reached <= 0 || this.bestH >= this.def.target + 0.8) this.done(TR.Challenges.starsFor(this.def, this.bestH), [['Bedste højde', `${TR.fmt(this.bestH)} m`]]);
       }
     }
     onSkill(skill, ev) {
@@ -288,6 +288,7 @@
         this.sfx.bounce(speed);
         R.burst(a.x, 0.02, 10, { up: true, speed: 1.6, color: 'rgba(255,255,255,0.7)', size: 0.03, life: 0.5 });
         if (this.demo) { this.bot.onLand(a); return; }
+        if (landing.heightLoss > 0.04) R.floater(`Væk fra midten −${Math.round(landing.heightLoss * 100)} % højde`, '#ffb4c1');
         if (skill.dd > 0 || skill.totalHalves > 0) {
           this.sfx.land(ev.E);
           const grade = S.grade(ev.E);

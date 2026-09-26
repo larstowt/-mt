@@ -313,3 +313,37 @@ test('arkade: dobbelt salto kræver træning', () => {
   const lvl = arcade({ power: 3, rotation: 3, flex: 3 }, { q: 8, shape: 'tuck', tilt: 0.3 });
   assert.ok(lvl.skill && lvl.skill.quarters === 8, JSON.stringify(lvl.crash || lvl.skill.fullName));
 });
+
+// Realistisk model: ~3,6 m / ~1,7 s uden træning, ~5,3 m / ~2,1 s med fuld Kraft (perfekte satser)
+function perfectPump(levels, secs = 40) {
+  const a = new TR.Athlete(levels);
+  const ap = [], tof = [];
+  a.on('apex', (e) => ap.push(e.height));
+  a.on('land', (e) => tof.push(e.skill.tof));
+  for (let i = 0; i < 240 * secs; i++) {
+    let push;
+    if (a.state === 'bed' && a.sats.speed < 3) push = true;
+    else { const t = a.satsTiming(); push = (t != null && t <= 0.03) || (a.state === 'bed' && a.sats.pressT != null); }
+    a.step(1 / 240, { push });
+  }
+  return { h: Math.max(...ap), tof: Math.max(...tof) };
+}
+
+test('realistiske højder og flyvetider', () => {
+  const base = perfectPump({});
+  assert.ok(base.h > 3.3 && base.h < 3.9, `højde ${base.h}`);
+  assert.ok(base.tof > 1.6 && base.tof < 1.8, `flyvetid ${base.tof}`);
+  const max = perfectPump({ power: 5 });
+  assert.ok(max.h > 4.9 && max.h < 5.6, `højde ${max.h}`);
+  assert.ok(max.tof > 1.95 && max.tof < 2.2, `flyvetid ${max.tof}`);
+});
+
+test('landing væk fra midten koster højde', () => {
+  const a = new TR.Athlete({});
+  let loss = null;
+  a.on('land', (e) => { if (loss == null && Math.abs(e.landing.x) > 1) loss = e.landing.heightLoss; });
+  for (let i = 0; i < 240 * 8; i++) a.step(1 / 240, { push: true });
+  a.x = 1.6; // flyt springeren ud mod kanten i luften
+  for (let i = 0; i < 240 * 3 && loss == null; i++) a.step(1 / 240, { push: true });
+  assert.ok(loss > 0.15 && loss <= 0.25, `højdetab ${loss}`);
+});
