@@ -45,11 +45,21 @@ test('salto baglæns lukket genkendes med FIG-kode og DD', () => {
   assert.equal(r.skill.dd, 0.5);
 });
 
-test('barani (forlæns med ½ skrue) i hoftebøjet', () => {
-  const [r] = sequence({}, [{ q: 4, dir: -1, tilt: 0.2, shape: 'pike', twist: 1, to: 'feet' }]);
+test('barani (forlæns med ½ skrue) strakt', () => {
+  const [r] = sequence({}, [{ q: 4, dir: -1, tilt: 0.25, twist: 1, to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.name, 'Barani');
-  assert.equal(r.skill.code, '4 1 <');
+  assert.equal(r.skill.code, '4 1 /');
+});
+
+test('skrue virker ikke i hoftebøjet (kun strakt og lukket)', () => {
+  for (const [shape, twists] of [['pike', false], ['tuck', true], [null, true]]) {
+    const a = new TR.Athlete({}, 'arcade');
+    for (let i = 0; i < 240 * 10; i++) a.step(1 / 240, { push: true });
+    while (a.state !== 'air') a.step(1 / 240, { push: true });
+    for (let i = 0; i < 120; i++) a.step(1 / 240, { twist: true, ...(shape ? { [shape]: true } : {}) });
+    assert.equal(a.tracker.dpsi > 0.5, twists, `${shape || 'strakt'}: skrue ${a.tracker.dpsi.toFixed(2)}`);
+  }
 });
 
 test('skrue i lukket position er mulig', () => {

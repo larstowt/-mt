@@ -7,11 +7,11 @@
     ArrowLeft: 'left', KeyA: 'left',
     ArrowRight: 'right', KeyD: 'right',
     Space: 'push', KeyW: 'push',
-    ArrowUp: 'straight', KeyV: 'straight',
     ArrowDown: 'kill', KeyS: 'kill',
-    KeyZ: 'tuck', KeyJ: 'tuck',
-    KeyX: 'pike', KeyK: 'pike',
-    KeyC: 'twist', KeyL: 'twist', ShiftLeft: 'twist', ShiftRight: 'twist',
+    KeyZ: 'tuck',
+    KeyX: 'pike',
+    KeyC: 'straight',
+    ShiftLeft: 'twist', ShiftRight: 'twist',
   };
 
   class Input {

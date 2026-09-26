@@ -94,7 +94,7 @@
       this.lastStart = fn;
       if (!this.save.seenHelp) {
         this.save.seenHelp = true; TR.persist(this.save);
-        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Hold ◀ eller ▶ for at lade rotation op, og slip for at bruge den. I luften: hold STRAKT, HOFTE, LUKKET eller SKRUE – slip for at bremse.' : 'Tryk MELLEMRUM når ringen bliver gul. Hold ← eller → for at lade rotation op, og slip for at bruge den. I luften: hold V strakt, X hoftebøjet, Z lukket eller C skrue – slip for at bremse.', 8000);
+        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Hold ◀ eller ▶ for at lade rotation op, og slip for at bruge den. I luften: hold STRAKT, HOFTE, LUKKET eller SKRUE – slip for at bremse.' : 'Tryk MELLEMRUM når ringen bliver gul. Hold ← eller → for at lade rotation op, og slip for at bruge den. I luften: hold C strakt, X hoftebøjet, Z lukket eller Shift skrue – slip for at bremse.', 8000);
       }
       fn();
     }

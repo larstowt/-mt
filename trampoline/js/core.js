@@ -41,7 +41,7 @@
   TR.SKILLS = [
     { id: 'power', name: 'Kraft', icon: '⬆', desc: 'Højere spring og mere tid i luften.' },
     { id: 'rotation', name: 'Rotation', icon: '↻', desc: 'Mere rotation med fra dugen.' },
-    { id: 'twist', name: 'Skrue', icon: '🌀', desc: 'Hurtigere skruer – også i lukket og hoftebøjet.' },
+    { id: 'twist', name: 'Skrue', icon: '🌀', desc: 'Hurtigere skruer – i strakt og lukket.' },
     { id: 'flex', name: 'Smidighed', icon: '🤸', desc: 'Hurtigere og tættere lukket/hoftebøjet position.' },
     { id: 'air', name: 'Luftkontrol', icon: '🪶', desc: 'Justér rotationen mere i luften.' },
     { id: 'landing', name: 'Landing', icon: '🎯', desc: 'Større tolerance og mere stabile landinger.' },

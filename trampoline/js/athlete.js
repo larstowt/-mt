@@ -315,6 +315,8 @@
 
     stepAir(dt, inp) {
       const fx = this.fx;
+      // Skrue kan kun laves strakt eller lukket – ikke hoftebøjet.
+      if (inp.twist && inp.pike && !inp.tuck) inp = { ...inp, twist: false };
       this.airT += dt;
       if (inp.push && !this.pushPrev) this.airPressAt = this.airT;
       const shape = inp.tuck ? 'tuck' : inp.pike ? 'pike' : 'straight';
