@@ -105,7 +105,7 @@
         return {
           phase: this.charge > 0 ? 'charge' : 'armed', frac: dir * amt,
           dir: dir * f > 0 ? 'baglæns' : 'forlæns',
-          straight: (w * T) / TR.TAU, tuck: (w * Math.pow(I_REF / tuckI, 0.55) * T) / TR.TAU,
+          straight: (w * T) / TR.TAU, tuck: (w * Math.pow(I_REF / tuckI, 0.32) * T) / TR.TAU,
         };
       }
       if (this.state === 'bed') {
@@ -117,7 +117,7 @@
         const arcade = this.control === 'arcade';
         const w = Math.abs((arcade ? fx.arcadeGain : fx.rotGain) * tilt * TR.clamp(v / 7, 0.25, 1));
         const tuckI = B.solve({ ...B.shapeTarget('tuck', fx.tight), hand: B.HAND.side }).Isom;
-        const tuckMult = arcade ? Math.pow(I_REF / tuckI, 0.55) : (I_REF / tuckI) * 0.7;
+        const tuckMult = arcade ? Math.pow(I_REF / tuckI, 0.32) : (I_REF / tuckI) * 0.7;
         const f = Math.cos(this.psiTarget) >= 0 ? 1 : -1;
         return {
           phase: 'bed', frac: TR.clamp(tilt / 0.45, -1, 1),
@@ -337,7 +337,7 @@
       if (this.control === 'arcade') {
         // Rotationen er givet ved afsættet. Holdes en position (strakt, hoftebøjet, lukket
         // eller skrue), roteres der med den; slippes alt, bremses der ned til en langsom rotation.
-        const mult = holding ? Math.max(1, Math.pow(I_REF / this.body.Isom, 0.55)) : fx.arcadeSlow;
+        const mult = holding ? Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32)) : fx.arcadeSlow;
         const target = (this.spin0 || 0) * mult;
         const faster = Math.abs(target) > Math.abs(this.omega);
         this.omega = TR.approach(this.omega, target, (faster ? 30 : fx.arcadeBrake) * dt);

@@ -38,7 +38,7 @@ test('pumper op i højde og holder sig under maks', () => {
 });
 
 test('salto baglæns lukket genkendes med FIG-kode og DD', () => {
-  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.15, shape: 'tuck', to: 'feet' }]);
+  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.2, shape: 'tuck', to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.code, '4 0 o');
   assert.equal(r.skill.dir, 'B');
@@ -63,7 +63,7 @@ test('skrue virker ikke i hoftebøjet (kun strakt og lukket)', () => {
 });
 
 test('skrue i lukket position er mulig', () => {
-  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.15, shape: 'tuck', twist: 2, to: 'feet' }]);
+  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.2, shape: 'tuck', twist: 2, to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.totalHalves, 2);
   assert.equal(r.skill.shape, 'o');
@@ -243,7 +243,7 @@ function arcade(levels, { q = 4, dir = 1, shape = 'straight', tilt = 0.3 }) {
   while (t < 30 && !res) {
     const inp = { lean: 0, push: true };
     // Lad op på vej ned mod dugen, og slip før landing
-    if (n >= 8 && !charged && a.state === 'air' && a.vy < 0) {
+    if (n >= 8 && !charged && a.state === 'air') {
       if (a.charge < amt) inp.lean = dir; else charged = true;
     }
     if (act && a.state === 'air') {
@@ -261,15 +261,15 @@ function arcade(levels, { q = 4, dir = 1, shape = 'straight', tilt = 0.3 }) {
 const landsWithSome = (lv, o, tilts) => tilts.map((tilt) => arcade(lv, { ...o, tilt })).find((r) => r && r.skill);
 
 test('arkade: strakt salto uden skrue (vip på dugen, hold STRAKT, slip)', () => {
-  const r = landsWithSome({}, { shape: 'straight' }, [0.25, 0.3, 0.35]);
+  const r = landsWithSome({}, { shape: 'straight' }, [0.4, 0.43, 0.45]);
   assert.ok(r, 'ingen strakt salto');
   assert.equal(r.skill.code, '4 0 /');
   assert.equal(r.skill.name, 'Salto baglæns');
 });
 
 test('arkade: hoftebøjet og lukket salto på første niveau', () => {
-  assert.equal(landsWithSome({}, { shape: 'pike' }, [0.2, 0.3]).skill.code, '4 0 <');
-  assert.equal(landsWithSome({}, { shape: 'tuck' }, [0.2, 0.3]).skill.code, '4 0 o');
+  assert.equal(landsWithSome({}, { shape: 'pike' }, [0.3, 0.35, 0.4, 0.45]).skill.code, '4 0 <');
+  assert.equal(landsWithSome({}, { shape: 'tuck' }, [0.3, 0.35, 0.4, 0.45]).skill.code, '4 0 o');
 });
 
 test('arkade: pilene lader op uden at rotere; slippes de i luften, bruges ladningen i næste afsæt', () => {
@@ -291,7 +291,7 @@ test('arkade: pilene lader op uden at rotere; slippes de i luften, bruges ladnin
   assert.ok(a.omega < w - 1, `uden knapper bremses der ned (${a.omega} < ${w})`);
   assert.ok(a.omega >= a.fx.arcadeSlow * a.spin0 - 0.01);
   for (let i = 0; i < 60; i++) a.step(1 / 240, { tuck: true });
-  assert.ok(a.omega > w * 1.4, 'lukket roterer hurtigere end strakt');
+  assert.ok(a.omega > w * 1.25, 'lukket roterer hurtigere end strakt');
 });
 
 test('arkade: holdes pilen gennem afsættet, starter rotationen først når man slipper', () => {

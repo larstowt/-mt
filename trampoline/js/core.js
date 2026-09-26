@@ -56,7 +56,7 @@
       // Realistisk: tyngdepunktet løftes ca. 3,6 m (flyvetid ~1,7 s) uden træning og ~5,3 m (~2,1 s) med fuld Kraft
       maxApex: 4.2 + 0.35 * p, // loft for satsen, meter over dugen
       pushAcc: 28 + 3 * p,
-      rotGain: 10 * (1 + 0.14 * r),
+      rotGain: 8 * (1 + 0.05 * r),
       twistRate: 9.5 * (1 + 0.17 * t), // rad/s i strakt
       twistStop: 70,
       shapeRate: 8 * (1 + 0.2 * f),
@@ -64,7 +64,7 @@
       air: 2.2 + 0.5 * a,
       // Arkade-styring (som Walaber's Trampoline): rotationen kommer fra afsættet;
       // hold en position for at rotere, slip alle knapper for at bremse ned.
-      arcadeGain: 14 * (1 + 0.12 * r),
+      arcadeGain: 9.5 * (1 + 0.28 * r),
       arcadeSlow: 0.1,
       arcadeBrake: 18 + 3 * a,
       landTol: 0.36 + 0.05 * l,
