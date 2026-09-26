@@ -117,8 +117,8 @@
       if (S.held) { q = 0.7; label = 'For tidligt'; }
       else if (S.pressT != null) {
         const diff = S.pressT - S.bottomT; // negativ = før bunden
-        if (diff >= -0.12 && diff <= 0.05) { q = 1; label = 'Perfekt sats!'; }
-        else if (diff >= -0.22 && diff <= 0.12) { q = 0.85; label = 'God sats'; }
+        if (diff >= -0.22 && diff <= 0.1) { q = 1; label = 'Perfekt sats!'; }
+        else if (diff >= -0.35 && diff <= 0.2) { q = 0.85; label = 'God sats'; }
         else if (diff < 0) { q = 0.7; label = 'For tidligt'; }
         else { q = 0.55; label = 'For sent'; }
       }
@@ -231,6 +231,7 @@
       this.vx = -Math.sin(tilt) * this.vy * fx.travel;
       this.state = 'air';
       this.airT = 0;
+      this.airPressAt = null;
       this.apexSent = false;
       this.tracker.start(this.phi, this.psi, this.x, this.contact, tilt);
       this.prevTorso = this.torsoAngle(B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW));
@@ -240,6 +241,7 @@
     stepAir(dt, inp) {
       const fx = this.fx;
       this.airT += dt;
+      if (inp.push && !this.pushPrev) this.airPressAt = this.airT;
       const shape = inp.tuck ? 'tuck' : inp.pike ? 'pike' : 'straight';
       const tg = B.shapeTarget(shape, fx.tight);
       let hand;
@@ -336,7 +338,11 @@
       this.body = B.solve(this.pose, this.body);
       this.y = this.feetY + this.contactOffset();
       this.yCorr += oldY - this.y;
-      this.newContact(-this.vy, !!this.pushPrev);
+      // Et tryk lige før landingen tæller som et rigtigt tryk (med negativ tid), ikke som at holde knappen nede.
+      const since = this.airT - (this.airPressAt == null ? -99 : this.airPressAt);
+      const fresh = this.pushPrev && since <= 0.15;
+      this.newContact(-this.vy, !!this.pushPrev && !fresh);
+      if (fresh) this.sats.pressT = -since;
       this.emit('land', { skill, landing, speed: -this.vy });
     }
 

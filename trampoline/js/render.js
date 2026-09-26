@@ -279,7 +279,7 @@
       ctx.strokeStyle = 'rgba(255,255,255,0.55)';
       ctx.beginPath(); ctx.ellipse(cx, cy, base, base * ry, 0, 0, Math.PI * 2); ctx.stroke();
       if (t >= 0) {
-        const near = t < 0.12;
+        const near = t < 0.22;
         const r = base * (1 + 3.2 * (t / 0.6));
         ctx.strokeStyle = near ? '#ffd166' : 'rgba(76,201,240,0.9)';
         ctx.globalAlpha = TR.clamp(1.3 - t / 0.6, 0.25, 1);
