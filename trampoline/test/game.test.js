@@ -220,8 +220,8 @@ test('Ryg til mave-serien kan gennemføres', () => {
   r.forEach((x, i) => assert.ok(x.skill && TR.Challenges.matches(x.skill, list[i]), `${i}: ${x.crash || x.skill.fullName}`));
 });
 
-// Arkade-styring: hold pilen for at rotere, slip for at bremse.
-function arcade(levels, { q = 4, dir = 1, shape = 'straight', twist = 0 }) {
+// Arkade-styring: rotationen kommer fra afsættet; hold en position for at rotere, slip for at bremse.
+function arcade(levels, { q = 4, dir = 1, shape = 'straight', tilt = 0.3 }) {
   const a = new TR.Athlete(levels, 'arcade');
   const dt = 1 / 240;
   let t = 0, n = 0, res = null, act = false;
@@ -229,43 +229,52 @@ function arcade(levels, { q = 4, dir = 1, shape = 'straight', twist = 0 }) {
   a.on('crash', (e) => { res = { crash: e.reason }; });
   while (t < 30 && !res) {
     const inp = { lean: 0, push: true };
-    if (n >= 8 && a.state === 'bed') { act = true; if (a.tilt() * dir < 0.1) inp.lean = dir; }
+    if (n >= 8 && a.state === 'bed') { act = true; if (a.tilt() * dir < tilt) inp.lean = dir; }
     if (act && a.state === 'air') {
       const rem = (q * Math.PI) / 2 - Math.abs(a.tracker.raw + a.tracker.tilt0);
-      const stop = (a.omega * a.omega) / (2 * a.fx.arcadeBrake);
-      if (rem > stop + 0.15) { inp.lean = dir; if (shape !== 'straight') inp[shape] = true; }
-      if (twist && a.tracker.dpsi < twist * Math.PI - 0.4 && a.airT > 0.15) inp.twist = true;
+      const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - 1.05)))) / TR.GRAV;
+      const w = Math.abs(a.omega), ws = Math.abs(a.fx.arcadeSlow * a.spin0), b = a.fx.arcadeBrake;
+      const tb = Math.max(0, (w - ws) / b);
+      const coast = ((w + ws) / 2) * Math.min(tb, tl) + ws * Math.max(0, tl - tb);
+      if (rem > coast) inp[shape] = true;
     }
     a.step(dt, inp); t += dt;
   }
   return res;
 }
+const landsWithSome = (lv, o, tilts) => tilts.map((tilt) => arcade(lv, { ...o, tilt })).find((r) => r && r.skill);
 
-test('arkade: strakt salto uden skrue ved at holde pilen og slippe', () => {
-  const r = arcade({}, {});
-  assert.ok(r && r.skill, JSON.stringify(r));
+test('arkade: strakt salto uden skrue (vip på dugen, hold STRAKT, slip)', () => {
+  const r = landsWithSome({}, { shape: 'straight' }, [0.25, 0.3, 0.35]);
+  assert.ok(r, 'ingen strakt salto');
   assert.equal(r.skill.code, '4 0 /');
   assert.equal(r.skill.name, 'Salto baglæns');
 });
 
 test('arkade: hoftebøjet og lukket salto på første niveau', () => {
-  assert.equal(arcade({}, { shape: 'pike' }).skill.code, '4 0 <');
-  assert.equal(arcade({}, { shape: 'tuck' }).skill.code, '4 0 o');
+  assert.equal(landsWithSome({}, { shape: 'pike' }, [0.2, 0.3]).skill.code, '4 0 <');
+  assert.equal(landsWithSome({}, { shape: 'tuck' }, [0.2, 0.3]).skill.code, '4 0 o');
 });
 
-test('arkade: når man slipper, bremser rotationen og stopper', () => {
+test('arkade: pilene i luften ændrer ikke rotationen, og uden knapper bremses der ned', () => {
   const a = new TR.Athlete({}, 'arcade');
   for (let i = 0; i < 240 * 8; i++) a.step(1 / 240, { lean: 0, push: true });
-  while (a.state !== 'air') a.step(1 / 240, { lean: 0, push: true });
-  for (let i = 0; i < 60; i++) a.step(1 / 240, { lean: 1, push: false });
-  assert.ok(Math.abs(a.omega) > 2, `omega ${a.omega}`);
-  for (let i = 0; i < 150 && a.state === 'air'; i++) a.step(1 / 240, { lean: 0, push: false });
-  assert.ok(Math.abs(a.omega) < 0.2, `omega efter slip ${a.omega}`);
+  while (a.state !== 'bed') a.step(1 / 240, { lean: 0, push: true });
+  while (a.state === 'bed') a.step(1 / 240, { lean: 1, push: true });
+  for (let i = 0; i < 60; i++) a.step(1 / 240, { lean: -1, straight: true });
+  const w = a.omega;
+  assert.ok(w > 2, `omega ${w}`);
+  assert.ok(Math.abs(w - a.spin0) < 0.1, 'strakt roterer med afsættets fart, uanset pilen');
+  for (let i = 0; i < 72; i++) a.step(1 / 240, { lean: 1 });
+  assert.ok(a.omega < w - 2.5, `omega efter slip ${a.omega} (før ${w})`);
+  assert.ok(a.omega >= a.fx.arcadeSlow * a.spin0 - 0.01, 'bremser ned til langsom rotation, ikke længere');
+  for (let i = 0; i < 60; i++) a.step(1 / 240, { tuck: true });
+  assert.ok(a.omega > w * 1.4, 'lukket roterer hurtigere end strakt');
 });
 
 test('arkade: dobbelt salto kræver træning', () => {
-  const base = arcade({}, { q: 8, shape: 'tuck' });
+  const base = arcade({}, { q: 8, shape: 'tuck', tilt: 0.3 });
   assert.ok(base.crash || base.skill.quarters < 8, 'dobbelt burde ikke lykkes uden træning');
-  const lvl = arcade({ power: 3, rotation: 3, flex: 3 }, { q: 8, shape: 'tuck' });
+  const lvl = arcade({ power: 3, rotation: 3, flex: 3 }, { q: 8, shape: 'tuck', tilt: 0.3 });
   assert.ok(lvl.skill && lvl.skill.quarters === 8, JSON.stringify(lvl.crash || lvl.skill.fullName));
 });

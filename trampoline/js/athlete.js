@@ -89,18 +89,21 @@
         const E = 0.5 * this.vy * this.vy + 0.5 * BED.K * d * d - GRAV * d;
         const v = Math.min(Math.sqrt(2 * GRAV * fx.maxApex), Math.sqrt(2 * Math.max(0, E)));
         const T = (2 * v) / GRAV;
-        const w = Math.abs(fx.rotGain * tilt * TR.clamp(v / 7, 0.25, 1));
+        const arcade = this.control === 'arcade';
+        const w = Math.abs((arcade ? fx.arcadeGain : fx.rotGain) * tilt * TR.clamp(v / 7, 0.25, 1));
         const tuckI = B.solve({ ...B.shapeTarget('tuck', fx.tight), hand: B.HAND.side }).Isom;
+        const tuckMult = arcade ? Math.pow(I_REF / tuckI, 0.55) : (I_REF / tuckI) * 0.7;
         const f = Math.cos(this.psiTarget) >= 0 ? 1 : -1;
         return {
           phase: 'bed', frac: TR.clamp(tilt / 0.45, -1, 1),
           dir: Math.abs(tilt) < 0.02 ? '' : Math.sign(tilt) * f > 0 ? 'baglæns' : 'forlæns',
-          straight: (w * T) / TR.TAU, tuck: (w * (I_REF / tuckI) * T * 0.7) / TR.TAU,
+          straight: (w * T) / TR.TAU, tuck: (w * tuckMult * T) / TR.TAU,
         };
       }
       if (this.state === 'air') {
         const f = this.tracker.facing0 || 1;
-        return { phase: 'air', frac: TR.clamp(this.L / (I_REF * maxW), -1, 1), dir: Math.abs(this.L) < 0.5 ? '' : Math.sign(this.L) * f > 0 ? 'baglæns' : 'forlæns' };
+        const fr = this.control === 'arcade' ? (this.spin0 || 0) / (fx.arcadeGain * 0.45) : this.L / (I_REF * maxW);
+        return { phase: 'air', frac: TR.clamp(fr, -1, 1), dir: Math.abs(this.L) < 0.5 ? '' : Math.sign(this.L) * f > 0 ? 'baglæns' : 'forlæns' };
       }
       return null;
     }
@@ -229,6 +232,9 @@
       const sz = TR.clamp(this.vy / 7, 0.25, 1);
       this.omega = fx.rotGain * tilt * sz;
       this.L = this.body.Isom * this.omega;
+      // Arkade: afsættets rotationsfart i strakt (rad/s)
+      this.spin0 = this.control === 'arcade' ? fx.arcadeGain * tilt * sz : 0;
+      if (this.control === 'arcade') { this.omega = this.spin0 * 0.5; this.L = this.body.Isom * this.omega; }
       this.vx = -Math.sin(tilt) * this.vy * fx.travel;
       this.state = 'air';
       this.airT = 0;
@@ -244,21 +250,26 @@
       this.airT += dt;
       if (inp.push && !this.pushPrev) this.airPressAt = this.airT;
       const shape = inp.tuck ? 'tuck' : inp.pike ? 'pike' : 'straight';
+      const holding = !!(inp.tuck || inp.pike || inp.straight || inp.twist);
       const tg = B.shapeTarget(shape, fx.tight);
       let hand;
       if (shape === 'tuck') hand = B.legGripTarget(this.pose, 0.3);
       else if (shape === 'pike') hand = B.legGripTarget(this.pose, 0.8);
       else if (inp.twist || this.twistRate > 0.5) hand = B.HAND.twist;
+      else if (this.control === 'arcade') hand = inp.straight ? B.HAND.up : B.HAND.side;
       else hand = this.airT < 0.3 ? B.HAND.up : B.HAND.side;
       this.approachPose(dt, tg.hip, tg.knee, hand, fx.shapeRate);
       this.body = B.solve(this.pose, this.body);
 
       // Salto: impulsmomentet er bevaret, så vinkelhastigheden følger positionen.
-      this.omega = this.L / this.body.Isom;
+      if (this.control !== 'arcade') this.omega = this.L / this.body.Isom;
       if (this.control === 'arcade') {
-        // Hold en pil for at rotere (hurtigere jo mere samlet), slip for at bremse.
-        const wmax = fx.arcadeW * Math.pow(I_REF / this.body.Isom, 0.85);
-        this.omega = TR.approach(this.omega, inp.lean * wmax, (inp.lean ? fx.arcadeAcc : fx.arcadeBrake) * dt);
+        // Rotationen er givet ved afsættet. Holdes en position (strakt, hoftebøjet, lukket
+        // eller skrue), roteres der med den; slippes alt, bremses der ned til en langsom rotation.
+        const mult = holding ? Math.max(1, Math.pow(I_REF / this.body.Isom, 0.55)) : fx.arcadeSlow;
+        const target = (this.spin0 || 0) * mult;
+        const faster = Math.abs(target) > Math.abs(this.omega);
+        this.omega = TR.approach(this.omega, target, (faster ? 30 : fx.arcadeBrake) * dt);
         this.L = this.omega * this.body.Isom;
       } else if (inp.lean) {
         this.L += inp.lean * fx.air * I_REF * dt;

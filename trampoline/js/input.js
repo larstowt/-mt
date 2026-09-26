@@ -6,7 +6,8 @@
   const KEYMAP = {
     ArrowLeft: 'left', KeyA: 'left',
     ArrowRight: 'right', KeyD: 'right',
-    Space: 'push', ArrowUp: 'push', KeyW: 'push',
+    Space: 'push', KeyW: 'push',
+    ArrowUp: 'straight', KeyV: 'straight',
     ArrowDown: 'kill', KeyS: 'kill',
     KeyZ: 'tuck', KeyJ: 'tuck',
     KeyX: 'pike', KeyK: 'pike',
@@ -75,18 +76,18 @@
       const ax = p.axes[0] || 0;
       return {
         left: ax < -0.4 || b(14), right: ax > 0.4 || b(15),
-        push: b(0), kill: b(13) || b(1), tuck: b(2) || b(6), pike: b(3) || b(7), twist: b(5) || b(4),
+        push: b(0), kill: b(13) || b(1), tuck: b(2) || b(6), pike: b(3) || b(7), twist: b(5), straight: b(4) || b(12),
       };
     }
 
     state() {
-      if (!this.enabled) return { lean: 0, push: false, kill: false, tuck: false, pike: false, twist: false };
+      if (!this.enabled) return { lean: 0, push: false, kill: false, tuck: false, pike: false, twist: false, straight: false };
       const k = this.keys, t = this.touch, g = this.pad();
       const any = (a) => !!(k[a] || t[a] || g[a]);
       const left = any('left'), right = any('right');
       return {
         lean: left && !right ? 1 : right && !left ? -1 : 0,
-        push: any('push'), kill: any('kill'), tuck: any('tuck'), pike: any('pike'), twist: any('twist'),
+        push: any('push'), kill: any('kill'), tuck: any('tuck'), pike: any('pike'), twist: any('twist'), straight: any('straight'),
       };
     }
   }

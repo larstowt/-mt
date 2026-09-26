@@ -60,9 +60,10 @@
       shapeRate: 8 * (1 + 0.2 * f),
       tight: f,
       air: 2.2 + 0.5 * a,
-      // Arkade-styring (som Walaber's Trampoline): hold pil = rotér, slip = bremse
-      arcadeW: 5.0 * (1 + 0.12 * r),
-      arcadeAcc: 16 + 3 * a,
+      // Arkade-styring (som Walaber's Trampoline): rotationen kommer fra afsættet;
+      // hold en position for at rotere, slip alle knapper for at bremse ned.
+      arcadeGain: 15 * (1 + 0.12 * r),
+      arcadeSlow: 0.28,
       arcadeBrake: 10 + 2 * a,
       landTol: 0.36 + 0.05 * l,
       dropTol: 0.45 + 0.04 * l,

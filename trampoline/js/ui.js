@@ -94,7 +94,7 @@
       this.lastStart = fn;
       if (!this.save.seenHelp) {
         this.save.seenHelp = true; TR.persist(this.save);
-        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Hold ◀ ▶ for at rotere, slip for at bremse. LUKKET/HOFTE/SKRUE i luften.' : 'Tryk MELLEMRUM når ringen bliver gul. Hold ← → for at rotere, slip for at bremse. Z lukket, X hoftebøjet, C skrue.', 7000);
+        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Vip med ◀ ▶ på dugen. I luften: hold STRAKT, HOFTE, LUKKET eller SKRUE for at rotere – slip for at bremse.' : 'Tryk MELLEMRUM når ringen bliver gul. Vip med ← → på dugen. I luften: hold V strakt, X hoftebøjet, Z lukket eller C skrue – slip for at bremse.', 8000);
       }
       fn();
     }
@@ -303,7 +303,7 @@
           : `≈ ${TR.fmt(info.straight, 1)} salto strakt · ${TR.fmt(info.tuck, 1)} lukket`;
       } else {
         est = this.game.athlete.control === 'arcade'
-          ? `Hold ${this.touch ? '◀ ▶' : '← →'} for at rotere · slip for at bremse`
+          ? 'Hold en position for at rotere · slip for at bremse'
           : `I luften – ${this.touch ? '◀ ▶' : '← →'} justerer`;
       }
       if (est !== this.lastEst) { $('rmEst').textContent = est; this.lastEst = est; }
