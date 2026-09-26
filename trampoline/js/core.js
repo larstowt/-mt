@@ -60,6 +60,10 @@
       shapeRate: 8 * (1 + 0.2 * f),
       tight: f,
       air: 2.2 + 0.5 * a,
+      // Arkade-styring (som Walaber's Trampoline): hold pil = rotér, slip = bremse
+      arcadeW: 5.0 * (1 + 0.12 * r),
+      arcadeAcc: 16 + 3 * a,
+      arcadeBrake: 10 + 2 * a,
       landTol: 0.36 + 0.05 * l,
       dropTol: 0.45 + 0.04 * l,
       travel: 0.07 * (1 - 0.1 * l),
@@ -76,6 +80,7 @@
     best: { free: 0, time: 0, routine: 0 },
     look: { suit: '#e63946', accent: '#ffd166', skin: '#f1c27d', hair: '#3b2a20' },
     sound: true,
+    control: 'arcade',
     arena: 'hall',
     seenHelp: false,
   });

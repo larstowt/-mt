@@ -114,6 +114,12 @@
         <div class="field">Bukser <div class="swatches" id="legsSw"></div></div>
         <div class="field">Hud <div class="swatches" id="skinSw"></div></div>
         <div class="field">Hår <div class="swatches" id="hairSw"></div></div>
+        <div class="field">Styring
+          <div class="seg" id="controlSeg" role="radiogroup" aria-label="Styring">
+            <button class="seg-btn" data-control="arcade" role="radio">Arkade <small>som Walaber: hold pil = rotér, slip = bremse</small></button>
+            <button class="seg-btn" data-control="physics" role="radio">Realistisk <small>fysik: rotationen tages med fra dugen</small></button>
+          </div>
+        </div>
         <div class="stats" id="statsBox"></div>
       </div>
     </section>
@@ -125,7 +131,7 @@
           <table class="keys">
             <tr><th></th><th>Tastatur</th><th>Mobil</th></tr>
             <tr><td>Sats (pump højde)</td><td><kbd>Mellemrum</kbd> / <kbd>↑</kbd></td><td>SATS</td></tr>
-            <tr><td>Vip / rotér</td><td><kbd>←</kbd> <kbd>→</kbd></td><td>◀ ▶</td></tr>
+            <tr><td>Rotér (hold) – slip for at bremse</td><td><kbd>←</kbd> <kbd>→</kbd></td><td>◀ ▶</td></tr>
             <tr><td>Lukket (tuck)</td><td><kbd>Z</kbd></td><td>LUKKET</td></tr>
             <tr><td>Hoftebøjet (pike)</td><td><kbd>X</kbd></td><td>HOFTE</td></tr>
             <tr><td>Skrue (twist)</td><td><kbd>C</kbd> / <kbd>Shift</kbd></td><td>SKRUE</td></tr>
@@ -134,7 +140,8 @@
           </table>
           <h3>Grundidéen</h3>
           <p><b>Sats:</b> Tryk <b>SATS</b> lige når du rammer bunden af dugen. En ring på dugen skrumper ind mod fødderne – tryk når den rammer målet (den bliver gul). Du får at vide om satsen var <i>perfekt</i>, <i>god</i>, <i>for tidlig</i> eller <i>for sen</i>. Perfekte satser giver mest højde; holder du bare knappen nede, kommer du ikke helt så højt.</p>
-          <p>Hold en <b>pil</b> på dugen for at vippe – jo længere du vipper, jo mere rotation tager du med op. I luften kan pilene justere rotationen lidt.</p>
+          <p><b>Rotation (arkade-styring, standard):</b> Hold <b>←</b> eller <b>→</b> for at rotere – som i Walaber's Trampoline. <b>Slip</b> alle knapper, så bremser rotationen og stopper. Strakt roterer roligt, hoftebøjet hurtigere og lukket hurtigst. En strakt salto laver du altså ved at holde pilen i strakt og slippe, lige inden du vender rigtigt.</p>
+          <p><b>Realistisk styring</b> (vælges under Spiller): Rotationen tages med fra dugen ved at vippe, og i luften kan pilene kun justere lidt.</p>
           <p>Kroppen følger fysikken: <b>lukket</b> roterer hurtigst, <b>hoftebøjet</b> lidt langsommere og <b>strakt</b> langsomst. Luk for at rotere, og åbn i tide til at lande på fødderne.</p>
           <p><b>Ryg og mave:</b> Du må gerne lande på ryggen (rygfald) eller maven (mavefald) og springe videre derfra – fx op til fødderne, ball-out (fra ryg, 1¼ salto forlæns), cody (fra mave, 1¼ salto baglæns) eller kaboom. Lander du skævt eller på hovedet, falder du.</p>
           <p><b>Rotationsmåleren</b> nederst viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket. I luften viser den, hvor meget rotation du har.</p>

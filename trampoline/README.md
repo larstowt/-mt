@@ -13,7 +13,7 @@ Et trampolinspil til browseren, der også kører på iPhone og Android. Spillet 
 | | Tastatur | Mobil |
 |---|---|---|
 | Sats (tryk når ringen bliver gul) | Mellemrum / ↑ | SATS |
-| Vip / rotér | ← → | ◀ ▶ |
+| Rotér (hold) – slip for at bremse | ← → | ◀ ▶ |
 | Lukket (tuck) | Z | LUKKET |
 | Hoftebøjet (pike) | X | HOFTE |
 | Skrue (twist) | C / Shift | SKRUE |
@@ -21,6 +21,11 @@ Et trampolinspil til browseren, der også kører på iPhone og Android. Spillet 
 | Pause | Esc / P | ❚❚ |
 
 Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = skrue).
+
+## Styring af rotation
+
+- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at rotere. Slip alle knapper, så bremser rotationen og stopper. Strakt roterer roligt, hoftebøjet hurtigere og lukket hurtigst.
+- **Realistisk:** rotationen tages med fra dugen ved at vippe, og impulsmomentet er bevaret i luften. Vælges under *Spiller*.
 
 ## Hvad er nyt i forhold til originalen
 

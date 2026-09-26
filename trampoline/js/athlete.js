@@ -17,8 +17,9 @@
   }
 
   class Athlete {
-    constructor(levels) {
+    constructor(levels, control) {
       this.listeners = {};
+      this.control = control || 'physics'; // 'arcade' eller 'physics'
       this.world = new Float64Array(B.N * 3);
       this.body = null;
       this.setSkills(levels || {});
@@ -253,8 +254,16 @@
       this.body = B.solve(this.pose, this.body);
 
       // Salto: impulsmomentet er bevaret, så vinkelhastigheden følger positionen.
-      if (inp.lean) this.L += inp.lean * fx.air * I_REF * dt;
       this.omega = this.L / this.body.Isom;
+      if (this.control === 'arcade') {
+        // Hold en pil for at rotere (hurtigere jo mere samlet), slip for at bremse.
+        const wmax = fx.arcadeW * Math.pow(I_REF / this.body.Isom, 0.85);
+        this.omega = TR.approach(this.omega, inp.lean * wmax, (inp.lean ? fx.arcadeAcc : fx.arcadeBrake) * dt);
+        this.L = this.omega * this.body.Isom;
+      } else if (inp.lean) {
+        this.L += inp.lean * fx.air * I_REF * dt;
+        this.omega = this.L / this.body.Isom;
+      }
       const dphi = this.omega * dt;
       this.phi += dphi;
 

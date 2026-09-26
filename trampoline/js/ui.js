@@ -94,7 +94,7 @@
       this.lastStart = fn;
       if (!this.save.seenHelp) {
         this.save.seenHelp = true; TR.persist(this.save);
-        this.toast(this.touch ? 'Tryk SATS når ringen på dugen bliver gul. ◀ ▶ vipper, LUKKET/HOFTE/SKRUE i luften.' : 'Tryk MELLEMRUM når ringen på dugen bliver gul. ← → vipper, Z lukket, X hoftebøjet, C skrue.', 6000);
+        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Hold ◀ ▶ for at rotere, slip for at bremse. LUKKET/HOFTE/SKRUE i luften.' : 'Tryk MELLEMRUM når ringen bliver gul. Hold ← → for at rotere, slip for at bremse. Z lukket, X hoftebøjet, C skrue.', 7000);
       }
       fn();
     }
@@ -204,6 +204,13 @@
     renderPlayer() {
       const s = this.save;
       $('nameInput').value = s.name;
+      const ctl = s.control === 'physics' ? 'physics' : 'arcade';
+      document.querySelectorAll('[data-control]').forEach((b) => {
+        const on = b.dataset.control === ctl;
+        b.classList.toggle('sel', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.onclick = () => { s.control = b.dataset.control; TR.persist(s); this.renderPlayer(); };
+      });
       for (const key of Object.keys(SWATCH)) {
         const box = $(key + 'Sw');
         const cur = key === 'legs' ? s.look.legs || '#f3f4f8' : s.look[key];
@@ -295,7 +302,9 @@
         est = Math.abs(f) < 0.02 ? `Hold ${this.touch ? '◀ eller ▶' : '← eller →'} på dugen for at vippe`
           : `≈ ${TR.fmt(info.straight, 1)} salto strakt · ${TR.fmt(info.tuck, 1)} lukket`;
       } else {
-        est = `I luften – ${this.touch ? '◀ ▶' : '← →'} justerer`;
+        est = this.game.athlete.control === 'arcade'
+          ? `Hold ${this.touch ? '◀ ▶' : '← →'} for at rotere · slip for at bremse`
+          : `I luften – ${this.touch ? '◀ ▶' : '← →'} justerer`;
       }
       if (est !== this.lastEst) { $('rmEst').textContent = est; this.lastEst = est; }
     }

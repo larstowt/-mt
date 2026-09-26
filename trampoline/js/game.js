@@ -329,6 +329,7 @@
       this.mode = null;
       this.input.enabled = false;
       this.athlete.setSkills({ power: 3, rotation: 3, twist: 3, flex: 3, air: 2 });
+      this.athlete.control = 'physics'; // demo-botten er skrevet til fysik-styringen
       this.athlete.reset();
       this.bot = new DemoBot();
       this.renderer.popups = [];
@@ -339,6 +340,7 @@
       this.demo = false;
       this.input.enabled = true;
       this.athlete.setSkills(this.save.skills);
+      this.athlete.control = this.save.control === 'physics' ? 'physics' : 'arcade';
       this.athlete.reset();
       this.renderer.popups = [];
       this.renderer.record = 0;

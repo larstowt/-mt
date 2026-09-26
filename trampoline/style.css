@@ -96,7 +96,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .final { background: linear-gradient(135deg, #05060f, #d62839 70%, #ffd166); }
 
 /* ---------- Paneler ---------- */
-.panel { width: min(520px, 100%); max-height: 100%; display: flex; flex-direction: column; padding: 18px; gap: 10px; }
+.panel { width: min(520px, 100%); max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; padding: 18px; gap: 10px; }
 .panel.wide { width: min(900px, 100%); }
 .panel.small { width: min(380px, 100%); text-align: center; }
 .panel h2 { margin: 0; font-size: 22px; }
@@ -177,6 +177,14 @@ code { background: rgba(255, 255, 255, 0.1); padding: 1px 6px; border-radius: 5p
 .routine-list li { padding: 2px 0; }
 .routine-list span { font-weight: 800; color: var(--accent); }
 .routine-list em { color: var(--muted); font-style: normal; }
+
+/* Valg af styring */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.seg-btn { text-align: left; border: 2px solid var(--panel-border); background: rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 10px 12px; font-weight: 800; color: var(--text); display: flex; flex-direction: column; gap: 2px; }
+.seg-btn small { font-weight: 600; color: var(--muted); font-size: 12px; line-height: 1.3; }
+.seg-btn.sel { border-color: var(--accent); background: rgba(255, 209, 102, 0.12); }
+.seg-btn:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+@media (max-width: 420px) { .seg { grid-template-columns: 1fr; } }
 
 /* Rotationsmåler */
 .rot-meter { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(16px + var(--sab)); width: min(340px, 46vw); padding: 8px 12px; border-radius: 14px; }
