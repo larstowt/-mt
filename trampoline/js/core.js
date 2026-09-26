@@ -38,6 +38,7 @@
 
   // ---------- Færdigheder (skill-system) ----------
   TR.SKILL_MAX = 5;
+  TR.MAX_SKILLS = { power: 5, rotation: 5, twist: 5, flex: 5, air: 5, landing: 5 };
   TR.SKILLS = [
     { id: 'power', name: 'Kraft', icon: '⬆', desc: 'Højere spring og mere tid i luften.' },
     { id: 'rotation', name: 'Rotation', icon: '↻', desc: 'Mere rotation med fra dugen.' },
@@ -82,6 +83,7 @@
     look: { suit: '#e63946', accent: '#ffd166', skin: '#f1c27d', hair: '#3b2a20' },
     sound: true,
     control: 'arcade',
+    freeMax: false, // fri leg med alle færdigheder på max
     arena: 'hall',
     seenHelp: false,
   });

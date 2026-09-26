@@ -250,3 +250,5 @@ body.playing .toast { bottom: auto; top: calc(150px + var(--sat)); }
 }
 
 .version { margin: -4px 0 0; opacity: 0.7; }
+
+.pill.on { border-color: var(--accent); background: rgba(255, 209, 102, 0.16); }

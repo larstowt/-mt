@@ -28,7 +28,7 @@
       this.timeLeft = this.opts.time || 0;
       this.count = 0;
     }
-    get title() { return this.opts.title || (this.opts.time ? `${this.opts.time} sek. tidsløb` : 'Fri leg'); }
+    get title() { return this.opts.title || (this.opts.time ? `${this.opts.time} sek. tidsløb` : this.opts.skills ? 'Fri leg · fuldt trænet' : 'Fri leg'); }
     onSkill(skill, ev) {
       const g = this.game;
       if (skill.dd <= 0) {
@@ -45,7 +45,7 @@
       this.count++;
       if (this.combo > 1) g.sfx.combo(this.combo);
       g.renderer.popup(`+${pts}`, { color: '#ffd166', size: 0.8, sub: this.combo > 1 ? `Kombination x${TR.fmt(S.comboMult(this.combo), 2)}${repeat ? ' · gentaget' : ''}` : repeat ? 'Gentaget spring' : '' });
-      if (!this.opts.time) {
+      if (!this.opts.time && !this.opts.skills) {
         g.addXp(Math.round(pts / 6));
         if (this.score > (g.save.best.free || 0)) { g.save.best.free = this.score; }
         g.dirty = true;
@@ -340,7 +340,7 @@
     startMode(mode) {
       this.demo = false;
       this.input.enabled = true;
-      this.athlete.setSkills(this.save.skills);
+      this.athlete.setSkills(mode.opts && mode.opts.skills ? mode.opts.skills : this.save.skills);
       this.athlete.control = this.save.control === 'physics' ? 'physics' : 'arcade';
       this.athlete.reset();
       this.renderer.popups = [];

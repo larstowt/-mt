@@ -35,6 +35,11 @@
       $('pauseHelpBtn').addEventListener('click', () => { this.helpFromPause = true; this.show('help'); });
       $('resMenuBtn').addEventListener('click', () => this.toMenu());
       $('retryBtn').addEventListener('click', () => { if (this.result && this.result.retry) this.result.retry(); });
+      $('freeMaxBtn').addEventListener('click', () => {
+        this.save.freeMax = !this.save.freeMax;
+        TR.persist(this.save); this.renderMenu();
+        this.toast(this.save.freeMax ? 'Fri leg: fuldt trænet – alle færdigheder på max (ingen XP eller rekord).' : 'Fri leg: din egen springer med dine færdigheder.');
+      });
       $('soundBtn').addEventListener('click', () => {
         this.save.sound = !(this.save.sound !== false);
         g.sfx.enabled = this.save.sound; g.sfx.unlock();
@@ -80,7 +85,7 @@
       const g = this.game, M = TR.Modes;
       if (where === 'help') this.helpFromPause = false;
       switch (where) {
-        case 'free': return this.start(() => g.startMode(new M.FreeMode(g, {})));
+        case 'free': return this.start(() => g.startMode(new M.FreeMode(g, this.save.freeMax ? { skills: TR.MAX_SKILLS } : {})));
         case 'time': return this.start(() => g.startMode(new M.FreeMode(g, { time: 60 })));
         case 'routine': return this.start(() => g.startMode(new M.RoutineMode(g, {})));
         case 'menu':
@@ -155,6 +160,9 @@
       $('pointsBadge').hidden = !pts;
       $('pointsBadge').textContent = pts;
       $('soundBtn').textContent = `Lyd: ${s.sound !== false ? 'til' : 'fra'}`;
+      $('freeMaxBtn').textContent = `Fri leg: ${s.freeMax ? 'fuldt trænet' : 'min springer'}`;
+      $('freeMaxBtn').classList.toggle('on', !!s.freeMax);
+      $('freeMaxBtn').setAttribute('aria-pressed', s.freeMax ? 'true' : 'false');
       $('arenaList').innerHTML = TR.ARENAS.map((a) => {
         const ok = TR.arenaUnlocked(s, a.id);
         return `<button class="arena ${a.id} ${this.game.arena === a.id ? 'sel' : ''}" data-arena="${a.id}" ${ok ? '' : 'disabled'}>
