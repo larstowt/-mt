@@ -225,12 +225,17 @@ test('Ryg til mave-serien kan gennemføres', () => {
 function arcade(levels, { q = 4, dir = 1, shape = 'straight', tilt = 0.3 }) {
   const a = new TR.Athlete(levels, 'arcade');
   const dt = 1 / 240;
-  let t = 0, n = 0, res = null, act = false;
+  const amt = Math.min(1, tilt / 0.45); // ladning (0-1) svarende til det gamle vip
+  let t = 0, n = 0, res = null, act = false, charged = false;
   a.on('land', (e) => { n++; if (act) res = e; });
   a.on('crash', (e) => { res = { crash: e.reason }; });
+  a.on('takeoff', () => { if (charged) act = true; });
   while (t < 30 && !res) {
     const inp = { lean: 0, push: true };
-    if (n >= 8 && a.state === 'bed') { act = true; if (a.tilt() * dir < tilt) inp.lean = dir; }
+    // Lad op på vej ned mod dugen, og slip før landing
+    if (n >= 8 && !charged && a.state === 'air' && a.vy < 0) {
+      if (a.charge < amt) inp.lean = dir; else charged = true;
+    }
     if (act && a.state === 'air') {
       const rem = (q * Math.PI) / 2 - Math.abs(a.tracker.raw + a.tracker.tilt0);
       const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - 1.05)))) / TR.GRAV;
@@ -257,21 +262,39 @@ test('arkade: hoftebøjet og lukket salto på første niveau', () => {
   assert.equal(landsWithSome({}, { shape: 'tuck' }, [0.2, 0.3]).skill.code, '4 0 o');
 });
 
-test('arkade: pilene i luften ændrer ikke rotationen, og uden knapper bremses der ned', () => {
+test('arkade: pilene lader op uden at rotere; slippes de i luften, bruges ladningen i næste afsæt', () => {
   const a = new TR.Athlete({}, 'arcade');
-  for (let i = 0; i < 240 * 8; i++) a.step(1 / 240, { lean: 0, push: true });
-  while (a.state !== 'air') a.step(1 / 240, { lean: 0, push: true });
-  while (a.state !== 'bed') a.step(1 / 240, { lean: 0, push: true });
-  while (a.state === 'bed') a.step(1 / 240, { lean: 1, push: true });
-  for (let i = 0; i < 60; i++) a.step(1 / 240, { lean: -1, straight: true });
+  for (let i = 0; i < 240 * 10; i++) a.step(1 / 240, { push: true });
+  while (a.state !== 'air') a.step(1 / 240, { push: true });
+  while (a.vy > 0) a.step(1 / 240, {});
+  for (let i = 0; i < 120; i++) a.step(1 / 240, { lean: 1 });
+  assert.ok(a.charge > 0.4, `ladning ${a.charge}`);
+  assert.ok(Math.abs(a.omega) < 0.05, 'ingen rotation mens der lades op');
+  a.step(1 / 240, { lean: 0 });
+  assert.ok(a.armed && a.armed.dir === 1, 'ladningen er gemt');
+  while (a.state !== 'bed') a.step(1 / 240, {});
+  while (a.state === 'bed') a.step(1 / 240, { push: true });
+  assert.ok(a.spin0 > 1.5, `rotation fra afsættet ${a.spin0}`);
+  for (let i = 0; i < 60; i++) a.step(1 / 240, { straight: true });
   const w = a.omega;
-  assert.ok(w > 2, `omega ${w}`);
-  assert.ok(Math.abs(w - a.spin0) < 0.1, 'strakt roterer med afsættets fart, uanset pilen');
-  for (let i = 0; i < 72; i++) a.step(1 / 240, { lean: 1 });
-  assert.ok(a.omega < w - 2.5, `omega efter slip ${a.omega} (før ${w})`);
-  assert.ok(a.omega >= a.fx.arcadeSlow * a.spin0 - 0.01, 'bremser ned til langsom rotation, ikke længere');
+  for (let i = 0; i < 72; i++) a.step(1 / 240, {});
+  assert.ok(a.omega < w - 1, `uden knapper bremses der ned (${a.omega} < ${w})`);
+  assert.ok(a.omega >= a.fx.arcadeSlow * a.spin0 - 0.01);
   for (let i = 0; i < 60; i++) a.step(1 / 240, { tuck: true });
   assert.ok(a.omega > w * 1.4, 'lukket roterer hurtigere end strakt');
+});
+
+test('arkade: holdes pilen gennem afsættet, starter rotationen først når man slipper', () => {
+  const a = new TR.Athlete({}, 'arcade');
+  for (let i = 0; i < 240 * 10; i++) a.step(1 / 240, { push: true });
+  while (a.state !== 'air') a.step(1 / 240, { push: true });
+  while (a.state === 'air') a.step(1 / 240, { lean: -1 });
+  while (a.state === 'bed') a.step(1 / 240, { lean: -1, push: true });
+  for (let i = 0; i < 48; i++) a.step(1 / 240, { lean: -1, straight: true });
+  assert.ok(Math.abs(a.omega) < 0.05, 'ingen rotation før slip');
+  a.step(1 / 240, { lean: 0 });
+  for (let i = 0; i < 48; i++) a.step(1 / 240, { straight: true });
+  assert.ok(a.omega < -2, `roterer efter slip (${a.omega})`);
 });
 
 test('arkade: dobbelt salto kræver træning', () => {

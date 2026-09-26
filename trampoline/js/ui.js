@@ -94,7 +94,7 @@
       this.lastStart = fn;
       if (!this.save.seenHelp) {
         this.save.seenHelp = true; TR.persist(this.save);
-        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Vip med ◀ ▶ på dugen. I luften: hold STRAKT, HOFTE, LUKKET eller SKRUE for at rotere – slip for at bremse.' : 'Tryk MELLEMRUM når ringen bliver gul. Vip med ← → på dugen. I luften: hold V strakt, X hoftebøjet, Z lukket eller C skrue – slip for at bremse.', 8000);
+        this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Hold ◀ eller ▶ for at lade rotation op, og slip for at bruge den. I luften: hold STRAKT, HOFTE, LUKKET eller SKRUE – slip for at bremse.' : 'Tryk MELLEMRUM når ringen bliver gul. Hold ← eller → for at lade rotation op, og slip for at bruge den. I luften: hold V strakt, X hoftebøjet, Z lukket eller C skrue – slip for at bremse.', 8000);
       }
       fn();
     }
@@ -296,9 +296,17 @@
       fill.style.left = f < 0 ? '50%' : `${50 - w}%`;
       fill.style.background = f < 0 ? 'linear-gradient(90deg, #4cc9f0, #ffd166, #ff6b81)' : 'linear-gradient(270deg, #4cc9f0, #ffd166, #ff6b81)';
       $('rmPct').textContent = `${Math.round(Math.abs(f) * 100)} %`;
-      $('rmDir').textContent = info.dir ? `Rotation ${info.dir}` : 'Rotation';
+      const head = info.phase === 'charge' ? 'Lader op' : info.phase === 'armed' ? 'Klar – rotation' : 'Rotation';
+      $('rmDir').textContent = info.dir ? `${head} ${info.dir}` : head;
       let est;
-      if (info.phase === 'bed') {
+      const k = this.touch ? '◀ eller ▶' : '← eller →';
+      if (info.phase === 'charge') {
+        est = `≈ ${TR.fmt(info.straight, 1)} salto strakt · ${TR.fmt(info.tuck, 1)} lukket · slip`;
+      } else if (info.phase === 'armed') {
+        est = `≈ ${TR.fmt(info.straight, 1)} salto strakt · ${TR.fmt(info.tuck, 1)} lukket`;
+      } else if (info.phase === 'bed' && this.game.athlete.control === 'arcade') {
+        est = `Hold ${k} for at lade rotation op`;
+      } else if (info.phase === 'bed') {
         est = Math.abs(f) < 0.02 ? `Hold ${this.touch ? '◀ eller ▶' : '← eller →'} på dugen for at vippe`
           : `≈ ${TR.fmt(info.straight, 1)} salto strakt · ${TR.fmt(info.tuck, 1)} lukket`;
       } else {

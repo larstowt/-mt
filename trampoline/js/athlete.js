@@ -44,6 +44,10 @@
       this.crashReason = null;
       this.pushPrev = false;
       this.newContact(0, false);
+      // Arkade: rotation lades op med pilene og udløses, når man slipper
+      this.charge = 0; this.chargeDir = 0; this.armed = null;
+      this.flightNo = 0; this.chargeFlight = -1; this.leanPrev = 0;
+      this.spin0 = 0; this.lastTakeoffV = 7;
       this.body = B.solve(this.pose, this.body);
       this.y = this.feetY + this.standOffset();
       this.updateWorld();
@@ -83,6 +87,26 @@
     rotInfo() {
       const fx = this.fx;
       const maxW = fx.rotGain * 0.45;
+      if (this.control === 'arcade' && this.state !== 'crash' && (this.charge > 0 || this.armed)) {
+        const amt = this.charge > 0 ? this.charge : this.armed.amt;
+        const dir = this.charge > 0 ? this.chargeDir : this.armed.dir;
+        let v = this.lastTakeoffV;
+        if (this.state === 'bed') {
+          const d = Math.max(0, -this.feetY);
+          const E = 0.5 * this.vy * this.vy + 0.5 * BED.K * d * d - GRAV * d;
+          v = Math.max(v * 0.5, Math.sqrt(2 * Math.max(0, E)));
+        }
+        v = Math.min(Math.sqrt(2 * GRAV * fx.maxApex), v);
+        const T = (2 * v) / GRAV;
+        const w = amt * fx.arcadeGain * 0.45 * TR.clamp(v / 7, 0.25, 1);
+        const tuckI = B.solve({ ...B.shapeTarget('tuck', fx.tight), hand: B.HAND.side }).Isom;
+        const f = Math.cos(Math.round(this.psi / Math.PI) * Math.PI) >= 0 ? 1 : -1;
+        return {
+          phase: this.charge > 0 ? 'charge' : 'armed', frac: dir * amt,
+          dir: dir * f > 0 ? 'baglæns' : 'forlæns',
+          straight: (w * T) / TR.TAU, tuck: (w * Math.pow(I_REF / tuckI, 0.55) * T) / TR.TAU,
+        };
+      }
       if (this.state === 'bed') {
         const tilt = this.tilt();
         const d = Math.max(0, -this.feetY);
@@ -106,6 +130,36 @@
         return { phase: 'air', frac: TR.clamp(fr, -1, 1), dir: Math.abs(this.L) < 0.5 ? '' : Math.sign(this.L) * f > 0 ? 'baglæns' : 'forlæns' };
       }
       return null;
+    }
+
+    // Arkade: hold en pil for at lade rotation op (også i luften). Når pilen slippes:
+    // - på dugen eller i luften før landing: bruges ladningen i næste afsæt
+    // - holdt gennem afsættet: rotationen starter nu, i luften
+    updateCharge(dt, inp) {
+      const lean = inp.lean;
+      if (this.state === 'crash') { this.charge = 0; this.armed = null; this.leanPrev = lean; return; }
+      if (lean) {
+        if (this.chargeDir !== lean || this.charge === 0) { this.chargeDir = lean; this.charge = 0; this.chargeFlight = this.flightNo; }
+        this.charge = Math.min(1, this.charge + dt / 1.0);
+        this.armed = null;
+      } else if (this.leanPrev && this.charge > 0) {
+        const amt = this.charge, dir = this.chargeDir;
+        this.charge = 0;
+        if (this.state === 'air' && this.chargeFlight < this.flightNo) {
+          const sz = TR.clamp(this.lastTakeoffV / 7, 0.25, 1);
+          this.spin0 = dir * amt * this.fx.arcadeGain * 0.45 * sz;
+          this.emit('spin', { amt, dir });
+        } else {
+          this.armed = { amt, dir };
+        }
+      }
+      this.leanPrev = lean;
+    }
+
+    // Vip på dugen: realistisk styring bruger pilen direkte; arkade viser den udløste ladning.
+    bedLean(inp) {
+      if (this.control !== 'arcade') return inp.lean * 0.45;
+      return this.armed ? this.armed.dir * this.armed.amt * 0.45 : 0;
     }
 
     // Ny kontakt med dugen: nulstil timingen af satsen.
@@ -162,6 +216,7 @@
     step(dt, input) {
       input = input || {};
       if (!input.lean) input = { ...input, lean: 0 };
+      if (this.control === 'arcade') this.updateCharge(dt, input);
       if (this.state === 'bed') this.stepBed(dt, input);
       else if (this.state === 'air') this.stepAir(dt, input);
       else this.stepCrash(dt);
@@ -189,11 +244,12 @@
 
       // Vip: holdes pilen længe nok på dugen, tages mere rotation med.
       if (this.contact === 'feet') {
-        this.phi = TR.approach(this.phi, inp.lean * 0.45, 1.1 * dt);
+        this.phi = TR.approach(this.phi, this.bedLean(inp), (this.control === 'arcade' ? 2.5 : 1.1) * dt);
       } else {
         B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW);
-        const err = this.lieA + inp.lean * 0.45 - this.torsoAngle(TMPW);
-        this.phi += TR.clamp(err, -1.1 * dt, 1.1 * dt);
+        const err = this.lieA + this.bedLean(inp) - this.torsoAngle(TMPW);
+        const rate = this.control === 'arcade' ? 2.5 : 1.1;
+        this.phi += TR.clamp(err, -rate * dt, rate * dt);
       }
       this.psi = TR.approach(this.psi, this.psiTarget, 6 * dt);
 
@@ -239,8 +295,14 @@
       this.omega = fx.rotGain * tilt * sz;
       this.L = this.body.Isom * this.omega;
       // Arkade: afsættets rotationsfart i strakt (rad/s)
-      this.spin0 = this.control === 'arcade' ? fx.arcadeGain * tilt * sz : 0;
-      if (this.control === 'arcade') { this.omega = this.spin0 * 0.5; this.L = this.body.Isom * this.omega; }
+      this.flightNo++;
+      this.lastTakeoffV = this.vy;
+      if (this.control === 'arcade') {
+        // Rotationen kommer fra den udløste ladning; holdes pilen stadig, venter den til man slipper.
+        this.spin0 = this.armed ? this.armed.dir * this.armed.amt * fx.arcadeGain * 0.45 * sz : 0;
+        this.armed = null;
+        this.omega = this.spin0 * 0.5; this.L = this.body.Isom * this.omega;
+      } else this.spin0 = 0;
       this.vx = -Math.sin(tilt) * this.vy * fx.travel;
       this.state = 'air';
       this.airT = 0;
