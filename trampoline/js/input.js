@@ -4,13 +4,13 @@
   const TR = G.TR;
 
   const KEYMAP = {
-    ArrowLeft: 'left', KeyA: 'left',
-    ArrowRight: 'right', KeyD: 'right',
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
     Space: 'push', KeyW: 'push',
-    ArrowDown: 'kill', KeyS: 'kill',
-    KeyZ: 'tuck',
-    KeyX: 'pike',
-    KeyC: 'straight',
+    ArrowDown: 'kill',
+    KeyS: 'tuck',
+    KeyD: 'pike',
+    KeyF: 'straight',
     ShiftLeft: 'twist', ShiftRight: 'twist',
   };
 

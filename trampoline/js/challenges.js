@@ -26,7 +26,7 @@
       id: 'hall', name: 'Klubhallen', need: 0, tagline: 'Hvor det hele starter.',
       challenges: [
         { id: 'h1', title: 'Første hop', desc: 'Pump dig op til 2,5 meters højde.', type: 'height', target: 2.5, hint: 'Tryk SATS (mellemrum), når ringen på dugen rammer målet og bliver gul.' },
-        { id: 'h2', title: 'Salto baglæns', desc: 'Land en salto baglæns – valgfri position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0 }, hint: 'Hold ← på vej ned for at lade rotation op, slip, og hold LUKKET (Z) i luften. Slip i god tid før landing.' },
+        { id: 'h2', title: 'Salto baglæns', desc: 'Land en salto baglæns – valgfri position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0 }, hint: 'Hold ← på vej ned for at lade rotation op, slip, og hold LUKKET (S) i luften. Slip i god tid før landing.' },
         { id: 'h3', title: 'Salto forlæns', desc: 'Land en salto forlæns.', type: 'skill', match: { dir: 'F', q: 4, halves: 0 }, hint: 'Lad op med den anden pil – forlæns afhænger af, hvilken vej du vender.' },
         { id: 'h4', title: 'Hoftebøjet', desc: 'Land en salto baglæns i hoftebøjet position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0, shape: '<' }, hint: 'Hold X for hoftebøjet.' },
         { id: 'h5', title: 'Barani', desc: 'Salto forlæns med ½ skrue.', type: 'skill', match: { dir: 'F', q: 4, halves: 1 }, hint: 'Tryk kort på Shift for en halv skrue.' },
@@ -39,7 +39,7 @@
       challenges: [
         { id: 's1', title: 'Højt oppe', desc: 'Nå 4 meters højde – som en eliteudøver.', type: 'height', target: 4.0, hint: 'Kraft-færdigheden giver højere spring.' },
         { id: 's2', title: 'Hel skrue', desc: 'Salto baglæns med hel skrue.', type: 'skill', match: { dir: 'B', q: 4, halves: 2 }, hint: 'Hold Shift lidt længere for en hel skrue.' },
-        { id: 's3', title: 'Skru i lukket', desc: 'Land en hel skrue i LUKKET position.', type: 'skill', match: { dir: 'B', q: 4, halves: 2, shape: 'o' }, hint: 'Hold Z og Shift samtidig. Lukket skruer langsommere.' },
+        { id: 's3', title: 'Skru i lukket', desc: 'Land en hel skrue i LUKKET position.', type: 'skill', match: { dir: 'B', q: 4, halves: 2, shape: 'o' }, hint: 'Hold S og Shift samtidig. Lukket skruer langsommere.' },
         { id: 's4', title: 'Tre positioner', desc: 'Land salto baglæns lukket, hoftebøjet og strakt i træk.', type: 'sequence',
           list: [{ dir: 'B', q: 4, halves: 0, shape: 'o' }, { dir: 'B', q: 4, halves: 0, shape: '<' }, { dir: 'B', q: 4, halves: 0, shape: '/' }], hint: 'Strakte hop imellem er tilladt.' },
         { id: 's5', title: 'Rudi', desc: 'Salto forlæns med 1½ skrue.', type: 'skill', match: { dir: 'F', q: 4, halves: 3 }, hint: 'Strakt skruer hurtigst.' },
@@ -54,8 +54,8 @@
         { id: 'a2', title: 'Hoftebøjet dobbelt', desc: 'Dobbelt salto baglæns hoftebøjet.', type: 'skill', match: { dir: 'B', q: 8, halves: 0, shape: '<' }, hint: 'Smidighed gør hoftebøjet tættere og hurtigere.' },
         { id: 'a3', title: 'Hel-ind', desc: 'Dobbelt salto baglæns med hel skrue i første salto.', type: 'skill', match: { dir: 'B', q: 8, split: [2, 0] }, hint: 'Skru tidligt, luk bagefter.' },
         { id: 'a4', title: 'Barani-ud', desc: 'Dobbelt salto forlæns med ½ skrue i sidste salto.', type: 'skill', match: { dir: 'F', q: 8, split: [0, 1] }, hint: 'Skru sent, når du åbner.' },
-        { id: 'a6', title: 'Ball-out', desc: 'Fra ryggen: 1¼ salto forlæns op på fødderne.', type: 'skill', match: { from: 'back', dir: 'F', q: 5 }, hint: 'Land et rygfald først. Lad godt op forlæns, hold LUKKET (Z) og slip før landing.' },
-        { id: 'a7', title: 'Cody', desc: 'Fra maven: 1¼ salto baglæns op på fødderne.', type: 'skill', match: { from: 'front', dir: 'B', q: 5 }, hint: 'Land et mavefald først. Lad godt op baglæns, hold LUKKET (Z) og slip før landing.' },
+        { id: 'a6', title: 'Ball-out', desc: 'Fra ryggen: 1¼ salto forlæns op på fødderne.', type: 'skill', match: { from: 'back', dir: 'F', q: 5 }, hint: 'Land et rygfald først. Lad godt op forlæns, hold LUKKET (S) og slip før landing.' },
+        { id: 'a7', title: 'Cody', desc: 'Fra maven: 1¼ salto baglæns op på fødderne.', type: 'skill', match: { from: 'front', dir: 'B', q: 5 }, hint: 'Land et mavefald først. Lad godt op baglæns, hold LUKKET (S) og slip før landing.' },
         { id: 'a5', title: 'Pointjagt', desc: 'Scor 2500 point på 60 sekunder.', type: 'score', target: 2500, time: 60, hint: 'Kombinationer ganger dine point op.' },
       ],
     },

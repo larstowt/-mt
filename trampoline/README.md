@@ -14,10 +14,10 @@ Et trampolinspil til browseren, der også kører på iPhone og Android. Spillet 
 |---|---|---|
 | Sats (tryk når ringen bliver gul) | Mellemrum | SATS |
 | Lad rotation op (hold) – slip for at bruge | ← → | ◀ ▶ |
-| Strakt (hold) | C | STRAKT |
-| Lukket (tuck) | Z | LUKKET |
-| Hoftebøjet (pike) | X | HOFTE |
-| Skrue (strakt, eller lukket med Shift+Z) | Shift | SKRUE |
+| Strakt (hold) | F | STRAKT |
+| Lukket (tuck) | S | LUKKET |
+| Hoftebøjet (pike) | D | HOFTE |
+| Skrue (strakt, eller lukket med Shift+S) | Shift | SKRUE |
 | Stop på dugen | ↓ | STOP |
 | Pause | Esc / P | ❚❚ |
 
@@ -25,7 +25,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 
 ## Styring af rotation
 
-- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at lade rotation op – også mens du er i luften. Slip for at bruge ladningen: i næste afsæt, eller med det samme, hvis du holdt pilen gennem afsættet. I luften holder du en position for at rotere: strakt (C), hoftebøjet (X), lukket (Z) eller skrue (Shift; strakt eller lukket med Shift+Z). Slip alle knapper, så bremser rotationen ned.
+- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at lade rotation op – også mens du er i luften. Slip for at bruge ladningen: i næste afsæt, eller med det samme, hvis du holdt pilen gennem afsættet. I luften holder du en position for at rotere: strakt (F), hoftebøjet (D), lukket (S) eller skrue (Shift; strakt eller lukket med Shift+S). Slip alle knapper, så bremser rotationen ned.
 - **Realistisk:** rotationen tages med fra dugen ved at vippe, og impulsmomentet er bevaret i luften. Vælges under *Spiller*.
 
 ## Hvad er nyt i forhold til originalen
@@ -34,7 +34,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 - **Landing på ryg og mave:** rygfald og mavefald, og videre derfra, fx til fødderne, ball-out, cody og kaboom.
 - **Timing af satsen:** en ring på dugen viser, hvornår man skal trykke SATS, og man får at vide, om satsen var perfekt, god, for tidlig eller for sen. Perfekt timing giver mest højde.
 - **Rotationsmåler:** viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket.
-- **Skruer i strakt og lukket position** (lukket skrue: Shift + Z). Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
+- **Skruer i strakt og lukket position** (lukket skrue: Shift + S). Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
 - **Realistiske højder i roligt tempo:** tyngdepunktet løftes ca. 3,6 m (flyvetid ~1,7 s) uden træning og ~5,3 m (~2,1 s) med fuld Kraft – som hos eliten. Højden holdes med gode satser og falder kun ved dårlig timing eller landing væk fra midten (op til 25 % ved kanten). Spillet kører i 70 % tempo, og kameraet følger med op.
 - **FIG-mål:** dug 4,28 × 2,14 m, ramme 5,05 × 2,91 m, 1,15 m over gulvet.
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
