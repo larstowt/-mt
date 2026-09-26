@@ -64,8 +64,8 @@
       // Arkade-styring (som Walaber's Trampoline): rotationen kommer fra afsættet;
       // hold en position for at rotere, slip alle knapper for at bremse ned.
       arcadeGain: 11 * (1 + 0.12 * r),
-      arcadeSlow: 0.28,
-      arcadeBrake: 10 + 2 * a,
+      arcadeSlow: 0.1,
+      arcadeBrake: 18 + 3 * a,
       landTol: 0.36 + 0.05 * l,
       dropTol: 0.45 + 0.04 * l,
       travel: 0.07 * (1 - 0.1 * l),
