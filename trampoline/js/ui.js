@@ -149,7 +149,7 @@
         <div class="grow">
           <div class="pname">${esc(s.name)}</div>
           <div class="xpbar"><i style="width:${Math.round(li.frac * 100)}%"></i></div>
-          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · ⭐ ${stars}/60 · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
+          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · ⭐ ${stars}/${TR.Challenges.MAX_STARS} · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
         </div>`;
       const pts = TR.freePoints(s);
       $('pointsBadge').hidden = !pts;
@@ -169,7 +169,7 @@
         const ok = TR.arenaUnlocked(s, a.id);
         const got = a.challenges.reduce((n, c) => n + (s.stars[c.id] | 0), 0);
         return `<div class="ch-arena ${a.id} ${ok ? '' : 'locked'}">
-          <div class="ch-head"><h3>${esc(a.name)}</h3><span>${ok ? `⭐ ${got}/15` : `🔒 ${a.need} ⭐ kræves (du har ${TR.totalStars(s)})`}</span></div>
+          <div class="ch-head"><h3>${esc(a.name)}</h3><span>${ok ? `⭐ ${got}/${a.challenges.length * 3}` : `🔒 ${a.need} ⭐ kræves (du har ${TR.totalStars(s)})`}</span></div>
           <div class="ch-grid">${a.challenges.map((c) => {
             const st = s.stars[c.id] | 0;
             const txt = TR.Challenges.starsText(c);

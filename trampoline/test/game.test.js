@@ -114,10 +114,15 @@ test('alle udfordringer har gyldige data og baner låses op i rækkefølge', () 
   let prev = -1;
   for (const a of TR.ARENAS) {
     assert.ok(a.need > prev); prev = a.need;
-    assert.equal(a.challenges.length, 5);
+    assert.ok(a.challenges.length >= 5);
     for (const c of a.challenges) assert.ok(['height', 'skill', 'sequence', 'score', 'routine'].includes(c.type), c.id);
   }
   assert.ok(TR.Challenges.matches({ dir: 'B', quarters: 8, totalHalves: 2, halves: [2, 0], shape: 'o' }, TR.Challenges.byId.a3.match));
+  // Ball-out matcher kun fra ryg til fødder, og en salto til ryggen er ikke en salto baglæns.
+  const ballOut = { from: 'back', to: 'feet', dir: 'F', quarters: 5, totalHalves: 0, halves: [0], shape: 'o' };
+  assert.ok(TR.Challenges.matches(ballOut, TR.Challenges.byId.a6.match));
+  assert.ok(!TR.Challenges.matches({ ...ballOut, from: 'feet' }, TR.Challenges.byId.a6.match));
+  assert.ok(!TR.Challenges.matches({ from: 'feet', to: 'back', dir: 'B', quarters: 4, totalHalves: 0, halves: [0] }, TR.Challenges.byId.h2.match));
 });
 
 test('færdighedspoint fra niveau og stjerner', () => {
@@ -198,4 +203,19 @@ test('rotationsmåleren viser vip og retning på dugen', () => {
   assert.ok(info.frac > 0.3);
   assert.equal(info.dir, 'baglæns');
   assert.ok(info.straight > 0 && info.tuck > info.straight);
+});
+
+test('Drop-serien (rygfald, ball-out, mavefald, cody) kan gennemføres', () => {
+  const lv = { power: 3, rotation: 3, flex: 3, air: 2 };
+  const r = sequence(lv, [RYG, { q: 5, dir: -1, tilt: 0.3, shape: 'tuck', to: 'feet' }, MAVE, { q: 5, dir: 1, tilt: 0.3, shape: 'tuck', to: 'feet' }]);
+  const list = TR.Challenges.byId.f6.list;
+  assert.equal(r.length, 4, JSON.stringify(r.map((x) => x.crash || x.skill.fullName)));
+  r.forEach((x, i) => assert.ok(x.skill && TR.Challenges.matches(x.skill, list[i]), `${i}: ${x.crash || x.skill.fullName}`));
+});
+
+test('Ryg til mave-serien kan gennemføres', () => {
+  const r = sequence({}, [RYG, { q: 2, dir: -1, tilt: 0.12, to: 'front' }, { q: 1, dir: 1, tilt: 0.06, to: 'feet' }]);
+  const list = TR.Challenges.byId.s6.list;
+  assert.equal(r.length, 3, JSON.stringify(r.map((x) => x.crash || x.skill.fullName)));
+  r.forEach((x, i) => assert.ok(x.skill && TR.Challenges.matches(x.skill, list[i]), `${i}: ${x.crash || x.skill.fullName}`));
 });

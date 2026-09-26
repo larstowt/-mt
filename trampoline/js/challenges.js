@@ -4,8 +4,11 @@
   const TR = G.TR;
 
   // m: {dir, q, halves, shape, split, minQ, minHalves}
+  // Uden from/to i mønstret skal springet starte og slutte på fødderne.
   function matches(skill, m) {
     if (!skill || !m) return false;
+    if ((skill.from || 'feet') !== (m.from || 'feet')) return false;
+    if ((skill.to || 'feet') !== (m.to || 'feet')) return false;
     if (m.dir && skill.dir !== m.dir) return false;
     if (m.q != null && skill.quarters !== m.q) return false;
     if (m.minQ != null && skill.quarters < m.minQ) return false;
@@ -27,6 +30,8 @@
         { id: 'h3', title: 'Salto forlæns', desc: 'Land en salto forlæns.', type: 'skill', match: { dir: 'F', q: 4, halves: 0 }, hint: 'Vip den anden vej – forlæns afhænger af hvilken vej du vender.' },
         { id: 'h4', title: 'Hoftebøjet', desc: 'Land en salto baglæns i hoftebøjet position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0, shape: '<' }, hint: 'Hold X for hoftebøjet.' },
         { id: 'h5', title: 'Barani', desc: 'Salto forlæns med ½ skrue.', type: 'skill', match: { dir: 'F', q: 4, halves: 1 }, hint: 'Tryk kort på C for en halv skrue.' },
+        { id: 'h6', title: 'Rygfald', desc: 'Land på ryggen, og kom op på fødderne igen.', type: 'sequence',
+          list: [{ to: 'back', q: 1, halves: 0 }, { from: 'back', q: 1, halves: 0 }], hint: 'Vip ganske lidt baglæns – hold øje med rotationsmåleren (under 15 %).' },
       ],
     },
     {
@@ -38,30 +43,37 @@
         { id: 's4', title: 'Tre positioner', desc: 'Land salto baglæns lukket, hoftebøjet og strakt i træk.', type: 'sequence',
           list: [{ dir: 'B', q: 4, halves: 0, shape: 'o' }, { dir: 'B', q: 4, halves: 0, shape: '<' }, { dir: 'B', q: 4, halves: 0, shape: '/' }], hint: 'Strakte hop imellem er tilladt.' },
         { id: 's5', title: 'Rudi', desc: 'Salto forlæns med 1½ skrue.', type: 'skill', match: { dir: 'F', q: 4, halves: 3 }, hint: 'Strakt skruer hurtigst.' },
+        { id: 's6', title: 'Ryg til mave', desc: 'Rygfald, så en halv salto forlæns ned på maven, og op på fødderne.', type: 'sequence',
+          list: [{ to: 'back', q: 1, halves: 0 }, { from: 'back', to: 'front', q: 2 }, { from: 'front', q: 1, halves: 0 }], hint: 'Fra ryggen vipper du den anden vej for at rotere forlæns.' },
       ],
     },
     {
-      id: 'aurora', name: 'Nordlys', need: 16, tagline: 'Dobbelte saltoer under polarhimlen.',
+      id: 'aurora', name: 'Nordlys', need: 18, tagline: 'Dobbelte saltoer under polarhimlen.',
       challenges: [
         { id: 'a1', title: 'Dobbelt salto', desc: 'Land en dobbelt salto baglæns.', type: 'skill', match: { dir: 'B', q: 8, halves: 0 }, hint: 'Kræver højde og rotation. Opgradér dine færdigheder.' },
         { id: 'a2', title: 'Hoftebøjet dobbelt', desc: 'Dobbelt salto baglæns hoftebøjet.', type: 'skill', match: { dir: 'B', q: 8, halves: 0, shape: '<' }, hint: 'Smidighed gør hoftebøjet tættere og hurtigere.' },
         { id: 'a3', title: 'Hel-ind', desc: 'Dobbelt salto baglæns med hel skrue i første salto.', type: 'skill', match: { dir: 'B', q: 8, split: [2, 0] }, hint: 'Skru tidligt, luk bagefter.' },
         { id: 'a4', title: 'Barani-ud', desc: 'Dobbelt salto forlæns med ½ skrue i sidste salto.', type: 'skill', match: { dir: 'F', q: 8, split: [0, 1] }, hint: 'Skru sent, når du åbner.' },
+        { id: 'a6', title: 'Ball-out', desc: 'Fra ryggen: 1¼ salto forlæns op på fødderne.', type: 'skill', match: { from: 'back', dir: 'F', q: 5 }, hint: 'Land et rygfald først. Vip godt forlæns fra ryggen og luk.' },
+        { id: 'a7', title: 'Cody', desc: 'Fra maven: 1¼ salto baglæns op på fødderne.', type: 'skill', match: { from: 'front', dir: 'B', q: 5 }, hint: 'Land et mavefald først. Vip godt baglæns fra maven og luk.' },
         { id: 'a5', title: 'Pointjagt', desc: 'Scor 2500 point på 60 sekunder.', type: 'score', target: 2500, time: 60, hint: 'Kombinationer ganger dine point op.' },
       ],
     },
     {
-      id: 'final', name: 'VM-finalen', need: 27, tagline: 'Lysene er tændt. Det gælder.',
+      id: 'final', name: 'VM-finalen', need: 30, tagline: 'Lysene er tændt. Det gælder.',
       challenges: [
         { id: 'f1', title: 'Første rutine', desc: 'Gennemfør en rutine med 10 elementer.', type: 'routine', target: 30, hint: 'Ingen strakte hop undervejs – hvert spring skal være et element.' },
         { id: 'f2', title: 'Dobbelt skrue', desc: 'Salto baglæns med dobbelt skrue.', type: 'skill', match: { dir: 'B', q: 4, halves: 4 }, hint: 'Skrue-færdigheden hjælper.' },
         { id: 'f3', title: 'Miller', desc: 'Dobbelt salto baglæns med hel skrue ind og hel skrue ud.', type: 'skill', match: { dir: 'B', q: 8, split: [2, 2] }, hint: 'Et af de sværeste spring. Strakt skruer hurtigst.' },
         { id: 'f4', title: 'Tripel', desc: 'Land en tripel salto.', type: 'skill', match: { q: 12 }, hint: 'Maks kraft og rotation – og luk tæt.' },
+        { id: 'f6', title: 'Drop-serien', desc: 'Rygfald, ball-out, mavefald og cody i træk.', type: 'sequence',
+          list: [{ to: 'back', q: 1, halves: 0 }, { from: 'back', dir: 'F', q: 5 }, { to: 'front', q: 1, halves: 0 }, { from: 'front', dir: 'B', q: 5 }], hint: 'Strakte hop imellem er tilladt.' },
         { id: 'f5', title: 'VM-guld', desc: 'Få 45 point i en rutine.', type: 'routine', target: 45, hint: 'Sværhed + udførelse + flyvetid + placering.' },
       ],
     },
   ];
 
+  const MAX_STARS = ARENAS.reduce((n, a) => n + a.challenges.length * 3, 0);
   const byId = {};
   ARENAS.forEach((a) => a.challenges.forEach((c) => (byId[c.id] = { ...c, arena: a.id })));
 
@@ -84,7 +96,7 @@
   }
 
   TR.ARENAS = ARENAS;
-  TR.Challenges = { matches, starsFor, starsText, byId, starsFromE };
+  TR.Challenges = { matches, starsFor, starsText, byId, starsFromE, MAX_STARS };
   TR.arenaById = (id) => ARENAS.find((a) => a.id === id) || ARENAS[0];
   TR.arenaUnlocked = (save, id) => TR.totalStars(save) >= TR.arenaById(id).need;
 })(globalThis);
