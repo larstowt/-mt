@@ -174,7 +174,9 @@
       const comp = TR.clamp(d / 0.9, 0, 1);
       const rising = this.vy > 0 ? TR.clamp(this.vy / 7, 0, 1) : 0;
       if (this.contact === 'feet') {
-        const hand = [0, 1, 2].map((i) => TR.lerp(B.HAND.bed[i], B.HAND.up[i], rising));
+        // Armsving op i afsættet – men ikke når strakt (V) holdes: så bliver armene nede langs siden.
+        const hand = inp.straight && this.control === 'arcade' ? B.HAND.straight
+          : [0, 1, 2].map((i) => TR.lerp(B.HAND.bed[i], B.HAND.up[i], rising));
         this.approachPose(dt, 0.12 + 0.35 * comp, 0.18 + 0.55 * comp, hand, 10);
       } else if (this.contact === 'back') {
         this.approachPose(dt, 0.75 - 0.2 * comp, 0.35, B.HAND.lieBack, 6);

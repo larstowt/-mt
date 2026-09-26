@@ -1,5 +1,5 @@
 // Service worker: gemmer spillet lokalt, så det kan spilles offline og installeres som app.
-const CACHE = 'trampolin-v8';
+const CACHE = 'trampolin-v9';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/core.js', 'js/body.js', 'js/tricks.js', 'js/athlete.js', 'js/scoring.js', 'js/challenges.js', 'js/share.js',
@@ -18,7 +18,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));
