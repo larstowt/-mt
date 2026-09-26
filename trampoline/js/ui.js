@@ -69,6 +69,7 @@
       $('touch').hidden = !(this.touch && name === 'play');
       this.game.renderer.safeBottom = this.touch && playing ? 150 : 0;
       document.body.classList.toggle('playing', name === 'play');
+      document.body.classList.toggle('touch', this.touch);
       if (name === 'menu') this.renderMenu();
       if (name === 'challenges') this.renderChallenges();
       if (name === 'skills') this.renderSkills();
@@ -277,10 +278,33 @@
       this.toastT = setTimeout(() => (t.hidden = true), ms);
     }
 
+    // ---------- Rotationsmåler ----------
+    rotMeter() {
+      const info = this.game.athlete.rotInfo();
+      const fill = $('rmFill');
+      if (!info) { fill.style.width = '0'; $('rmPct').textContent = '–'; $('rmDir').textContent = 'Rotation'; return; }
+      const f = info.frac;
+      const w = Math.abs(f) * 50;
+      fill.style.width = `${w}%`;
+      fill.style.left = f < 0 ? '50%' : `${50 - w}%`;
+      fill.style.background = f < 0 ? 'linear-gradient(90deg, #4cc9f0, #ffd166, #ff6b81)' : 'linear-gradient(270deg, #4cc9f0, #ffd166, #ff6b81)';
+      $('rmPct').textContent = `${Math.round(Math.abs(f) * 100)} %`;
+      $('rmDir').textContent = info.dir ? `Rotation ${info.dir}` : 'Rotation';
+      let est;
+      if (info.phase === 'bed') {
+        est = Math.abs(f) < 0.02 ? `Hold ${this.touch ? '◀ eller ▶' : '← eller →'} på dugen for at vippe`
+          : `≈ ${TR.fmt(info.straight, 1)} salto strakt · ${TR.fmt(info.tuck, 1)} lukket`;
+      } else {
+        est = `I luften – ${this.touch ? '◀ ▶' : '← →'} justerer`;
+      }
+      if (est !== this.lastEst) { $('rmEst').textContent = est; this.lastEst = est; }
+    }
+
     // ---------- HUD ----------
     frame(dt) {
       const g = this.game;
       if (this.screen !== 'play' || !g.mode) return;
+      this.rotMeter();
       const live = g.athlete.live();
       const lt = live ? TR.liveText(live) : '';
       if (lt !== this.lastLive) { $('live').textContent = lt; this.lastLive = lt; }

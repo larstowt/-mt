@@ -211,39 +211,48 @@
 
   // ---------- Demo-bot til menuen ----------
   class DemoBot {
-    constructor() { this.plan = null; this.leanT = 0; this.n = 0; this.active = false; this.lastApex = 0; }
-    onLand() { this.n++; this.next(); }
+    constructor() { this.plan = null; this.n = 0; this.lastApex = 0; }
+    onLand(a) { this.n++; this.next(a); }
     onCrash() { this.n = 0; this.plan = null; }
     onApex(h) { this.lastApex = h; }
-    next() {
+    next(a) {
+      // Ligger springeren, rejser den sig igen; ellers vælges et tilfældigt spring.
+      if (a && a.contact !== 'feet') {
+        this.plan = { shape: 'straight', q: Math.random() < 0.3 ? 5 : 1, tilt: 0.08, lean: -Math.sign(a.lieA), to: 'feet' };
+        if (this.plan.q === 5) { this.plan.shape = 'tuck'; this.plan.tilt = 0.3; }
+        return;
+      }
       const plans = [
-        { shape: 'tuck', som: 1, lean: 0.17, dir: 1 },
-        { shape: 'pike', som: 1, lean: 0.17, dir: 1 },
-        { shape: 'straight', som: 1, lean: 0.28, dir: 1, twist: 2 },
-        { shape: 'tuck', som: 1, lean: 0.17, dir: -1, twist: 1, twistAt: 0.35 },
-        { shape: 'straight', som: 1, lean: 0.28, dir: -1, twist: 3 },
-        { shape: 'tuck', som: 2, lean: 0.3, dir: 1 },
-        { shape: 'tuck', som: 1, lean: 0.17, dir: 1, twist: 2, twistAt: 0.3 },
+        { shape: 'tuck', q: 4, tilt: 0.2, dir: 1 },
+        { shape: 'pike', q: 4, tilt: 0.2, dir: 1 },
+        { shape: 'straight', q: 4, tilt: 0.35, dir: 1, twist: 2 },
+        { shape: 'tuck', q: 4, tilt: 0.2, dir: -1, twist: 1, twistAt: 0.35 },
+        { shape: 'straight', q: 4, tilt: 0.35, dir: -1, twist: 3 },
+        { shape: 'tuck', q: 8, tilt: 0.35, dir: 1 },
+        { shape: 'tuck', q: 4, tilt: 0.2, dir: 1, twist: 2, twistAt: 0.3 },
+        { shape: 'straight', q: 1, tilt: 0.06, dir: 1, to: 'back' },
+        { shape: 'straight', q: 1, tilt: 0.06, dir: -1, to: 'front' },
       ];
-      this.plan = this.lastApex > 2.6 && this.n % 2 === 0 ? plans[Math.floor(Math.random() * plans.length)] : null;
-      this.leanT = 0;
+      const p = this.lastApex > 2.6 && this.n % 2 === 0 ? plans[Math.floor(Math.random() * plans.length)] : null;
+      if (p) p.lean = p.dir * (a ? a.facing : 1);
+      this.plan = p;
     }
-    input(a, dt) {
+    input(a) {
       const inp = { lean: 0, push: true, tuck: false, pike: false, twist: false, kill: false };
       const p = this.plan;
       if (!p) return inp;
-      const dir = p.dir * a.facing;
-      if (a.state === 'bed' && a.vy > -2.5 && this.leanT < p.lean) { inp.lean = dir; this.leanT += dt; }
-      if (a.state === 'air' && this.leanT > 0) {
-        const rem = p.som * TR.TAU - Math.abs(a.tracker.dphi);
-        const disc = a.vy * a.vy + 2 * TR.GRAV * (a.y - 1.1);
-        const tl = (a.vy + Math.sqrt(Math.max(0, disc))) / TR.GRAV;
-        const wS = Math.abs(a.L) / 11;
-        if (p.shape !== 'straight' && rem > wS * tl + 0.35) inp[p.shape] = true;
-        const sgn = Math.sign(a.omega) || 1;
-        if (rem < wS * tl - 0.2) inp.lean = -sgn; else if (rem > wS * tl + 0.2 && !inp.tuck && !inp.pike) inp.lean = sgn;
-        if (p.twist && a.airT > (p.twistAt || 0.1) && a.tracker.dpsi < p.twist * Math.PI - 0.5) inp.twist = true;
-      }
+      if (a.state === 'bed') { if (a.tilt() * p.lean < p.tilt) inp.lean = p.lean; return inp; }
+      if (a.state !== 'air') return inp;
+      const t = a.tracker;
+      const done = Math.abs((t.from === 'feet' ? t.raw : t.dphi) + t.tilt0);
+      const rem = (p.q * Math.PI) / 2 - done;
+      const hLand = (p.to || 'feet') === 'feet' ? 1.05 : 0.25;
+      const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - hLand)))) / TR.GRAV;
+      const wS = Math.abs(a.L) / 11;
+      if (p.shape !== 'straight' && rem > wS * tl + 0.4) inp[p.shape] = true;
+      const sgn = Math.sign(a.L) || p.lean;
+      if (!inp.tuck && !inp.pike) { if (rem < wS * tl - 0.1) inp.lean = -sgn; else if (rem > wS * tl + 0.1) inp.lean = sgn; }
+      if (p.twist && a.airT > (p.twistAt || 0.1) && t.dpsi < p.twist * Math.PI - 0.5) inp.twist = true;
       return inp;
     }
   }
@@ -277,7 +286,7 @@
         const ev = S.execution(skill, landing);
         this.sfx.bounce(speed);
         R.burst(a.x, 0.02, 10, { up: true, speed: 1.6, color: 'rgba(255,255,255,0.7)', size: 0.03, life: 0.5 });
-        if (this.demo) { this.bot.onLand(); return; }
+        if (this.demo) { this.bot.onLand(a); return; }
         if (skill.dd > 0 || skill.totalHalves > 0) {
           this.sfx.land(ev.E);
           const grade = S.grade(ev.E);
@@ -405,4 +414,5 @@
 
   TR.Game = Game;
   TR.Modes = { FreeMode, RoutineMode, ChallengeMode };
+  TR.DemoBot = DemoBot;
 })(globalThis);

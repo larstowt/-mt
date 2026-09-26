@@ -14,7 +14,7 @@
       if (skill.openTime < 0.1) add('Åbnede sent', 0.2);
       else if (skill.openTime < 0.2) add('Åbnede sent', 0.1);
     }
-    if (land.hip > 0.5 || land.knee > 0.6) add('Bøjet ved landing', 0.1);
+    if ((land.kind || 'feet') === 'feet' && (land.hip > 0.5 || land.knee > 0.6)) add('Bøjet ved landing', 0.1);
     const travel = Math.abs(land.x - skill.x0);
     if (travel > 0.7) add('Vandring', 0.2);
     else if (travel > 0.35) add('Vandring', 0.1);

@@ -25,6 +25,8 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 ## Hvad er nyt i forhold til originalen
 
 - **Tre positioner:** strakt, **hoftebøjet** og lukket.
+- **Landing på ryg og mave:** rygfald og mavefald, og videre derfra, fx til fødderne, ball-out, cody og kaboom.
+- **Rotationsmåler:** viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket.
 - **Skruer i alle positioner**, også lukket og hoftebøjet. Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
 - **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.

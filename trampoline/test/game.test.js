@@ -16,7 +16,7 @@ function jump(levels, { shape = 'tuck', som = 1, lean = 0.2, dir = 1, twist = 0,
     const inp = { lean: 0, push: true, tuck: false, pike: false, twist: false, kill: false };
     if (n >= 8 && a.state === 'bed' && a.vy > -2.5 && leanT < lean) { inp.lean = dir; leanT += dt; }
     if (a.state === 'air' && leanT > 0) {
-      const rem = som * TR.TAU - Math.abs(a.tracker.dphi);
+      const rem = som * TR.TAU - Math.abs(a.tracker.raw + a.tracker.tilt0);
       const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - 1.1)))) / TR.GRAV;
       const w = Math.abs(a.L) / 11;
       if (shape !== 'straight' && rem > w * tl + 0.35) inp[shape] = true;
@@ -125,4 +125,77 @@ test('færdighedspoint fra niveau og stjerner', () => {
   assert.equal(TR.freePoints(s), 0);
   s.xp = TR.xpForLevel(3); s.stars = { h1: 3, h2: 1 };
   assert.equal(TR.freePoints(s), 4);
+});
+
+// Autopilot til spring med start/slut på ryg og mave: holder et vip-mål på dugen og retter op i luften.
+function sequence(levels, steps, pump = 6) {
+  const a = new TR.Athlete(levels);
+  const dt = 1 / 240;
+  const Istr = TR.Body.solve({ hip: 0, knee: 0, hand: TR.Body.HAND.side }).Isom;
+  let t = 0, n = 0, idx = -1, cur = null;
+  const out = [];
+  a.on('land', (e) => { n++; if (cur) { out.push({ skill: e.skill, contact: a.contact }); idx++; cur = null; } });
+  a.on('crash', (e) => { out.push({ crash: e.reason }); t = 99; });
+  a.on('takeoff', () => { if (idx >= 0 && steps[idx]) cur = steps[idx]; });
+  while (t < 40 && (idx < 0 || idx < steps.length)) {
+    const inp = { lean: 0, push: true };
+    if (n >= pump && idx < 0) idx = 0;
+    const p = steps[idx];
+    if (p && a.state === 'bed' && a.tilt() * p.dir < p.tilt) inp.lean = p.dir;
+    if (cur && a.state === 'air') {
+      const rem = (cur.q * Math.PI) / 2 - Math.abs(a.tracker.dphi + a.tracker.tilt0);
+      const hLand = cur.to === 'feet' ? 1.05 : 0.25;
+      const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - hLand)))) / TR.GRAV;
+      const w = Math.abs(a.L) / Istr;
+      if (cur.shape && rem > w * tl + 0.4) inp[cur.shape] = true;
+      if (!inp[cur.shape || 'x']) { if (rem < w * tl - 0.1) inp.lean = -cur.dir; else if (rem > w * tl + 0.1) inp.lean = cur.dir; }
+      if (cur.twist && a.tracker.dpsi < cur.twist * Math.PI - 0.4 && a.airT > 0.15) inp.twist = true;
+    }
+    a.step(dt, inp); t += dt;
+  }
+  return out;
+}
+
+const RYG = { q: 1, dir: 1, tilt: 0.06, to: 'back' };
+const MAVE = { q: 1, dir: -1, tilt: 0.06, to: 'front' };
+
+test('rygfald og tilbage op på fødderne', () => {
+  const r = sequence({}, [RYG, { q: 1, dir: -1, tilt: 0.06, to: 'feet' }]);
+  assert.equal(r[0].skill && r[0].skill.name, 'Rygfald', JSON.stringify(r));
+  assert.equal(r[0].contact, 'back');
+  assert.equal(r[1].skill && r[1].skill.name, 'Fra ryg til fødder', JSON.stringify(r));
+  assert.equal(r[1].contact, 'feet');
+});
+
+test('mavefald videre til cody', () => {
+  const r = sequence({ power: 3, rotation: 3, flex: 3, air: 2 }, [MAVE, { q: 5, dir: 1, tilt: 0.3, shape: 'tuck', to: 'feet' }]);
+  assert.equal(r[0].skill && r[0].skill.name, 'Mavefald', JSON.stringify(r));
+  assert.equal(r[1].skill && r[1].skill.name, 'Cody', JSON.stringify(r));
+  assert.equal(r[1].skill.dir, 'B');
+  assert.equal(r[1].skill.quarters, 5);
+});
+
+test('rygfald videre til ball-out', () => {
+  const r = sequence({ power: 3, rotation: 3, flex: 3, air: 2 }, [RYG, { q: 5, dir: -1, tilt: 0.3, shape: 'tuck', to: 'feet' }]);
+  assert.equal(r[1].skill && r[1].skill.name, 'Ball-out', JSON.stringify(r));
+  assert.ok(r[1].skill.dd >= 0.6);
+});
+
+test('landing på hovedet er stadig et styrt', () => {
+  const r = sequence({ power: 3, rotation: 3 }, [{ q: 2, dir: 1, tilt: 0.12, to: 'back' }]);
+  assert.ok(r[0].crash, JSON.stringify(r));
+});
+
+test('rotationsmåleren viser vip og retning på dugen', () => {
+  const a = new TR.Athlete({});
+  for (let i = 0; i < 240 * 6; i++) a.step(1 / 240, { lean: 0, push: true });
+  let info = null;
+  for (let i = 0; i < 240 * 3 && !(info && info.phase === 'bed' && info.frac > 0.3); i++) {
+    a.step(1 / 240, { lean: a.state === 'bed' ? 1 : 0, push: true });
+    info = a.rotInfo();
+  }
+  assert.equal(info.phase, 'bed');
+  assert.ok(info.frac > 0.3);
+  assert.equal(info.dir, 'baglæns');
+  assert.ok(info.straight > 0 && info.tuck > info.straight);
 });

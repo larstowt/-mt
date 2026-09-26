@@ -178,6 +178,19 @@ code { background: rgba(255, 255, 255, 0.1); padding: 1px 6px; border-radius: 5p
 .routine-list span { font-weight: 800; color: var(--accent); }
 .routine-list em { color: var(--muted); font-style: normal; }
 
+/* Rotationsmåler */
+.rot-meter { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(16px + var(--sab)); width: min(340px, 46vw); padding: 8px 12px; border-radius: 14px; }
+body.touch .rot-meter { bottom: calc(12px + var(--sab)); width: min(300px, 36vw); }
+.rm-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.rm-head b { color: var(--text); font-size: 15px; font-variant-numeric: tabular-nums; }
+.rm-bar { position: relative; height: 12px; margin: 6px 0 5px; border-radius: 6px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.rm-bar i { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; border-radius: 6px; background: linear-gradient(90deg, #4cc9f0, #ffd166, #ff6b81); transition: width 0.05s linear; }
+.rm-mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: rgba(255, 255, 255, 0.6); }
+.rm-est { font-size: 12px; color: #dfe4ff; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 700px) and (orientation: portrait) {
+  body.touch .rot-meter { bottom: calc(200px + var(--sab)); width: min(320px, 80vw); }
+}
+
 /* ---------- Touch ---------- */
 #touch { position: absolute; inset: auto 0 0 0; height: 0; touch-action: none; }
 .pad { position: absolute; bottom: calc(12px + var(--sab)); display: flex; flex-direction: column; gap: 10px; }

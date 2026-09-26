@@ -41,6 +41,8 @@
     twist: [0.17, -0.2, -0.13],
     crash: [0.35, 0.25, 0.35],
     bed: [0.1, -0.55, 0.08],
+    lieBack: [0.25, 0.3, 0.35],
+    lieFront: [0.4, 0.25, 0.2],
   };
 
   // Håndmål hvor hænderne griber om skinnebenet (lukket) eller anklerne (hoftebøjet).

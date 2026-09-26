@@ -61,6 +61,7 @@
       tight: f,
       air: 2.2 + 0.5 * a,
       landTol: 0.36 + 0.05 * l,
+      dropTol: 0.45 + 0.04 * l,
       travel: 0.07 * (1 - 0.1 * l),
     };
   };

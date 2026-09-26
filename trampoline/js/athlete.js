@@ -30,6 +30,8 @@
 
     reset() {
       this.state = 'bed';
+      this.contact = 'feet'; // fødder, ryg (back) eller mave (front)
+      this.lieA = 0;
       this.x = 0; this.vx = 0;
       this.feetY = -GRAV / BED.K; this.vy = 0;
       this.phi = 0; this.psi = 0; this.psiTarget = 0;
@@ -52,6 +54,52 @@
       const W = B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW);
       const a = Math.min(W[B.IDX.ankleL * 3 + 1], W[B.IDX.ankleR * 3 + 1]);
       return -a + 0.06;
+    }
+
+    // Kontaktpunktets højde under massemidtpunktet i den nuværende stilling.
+    contactOffset() {
+      if (this.contact === 'feet') return this.standOffset();
+      const W = B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW);
+      return -B.lowest(W).y;
+    }
+
+    // Overkroppens vinkel mod uret fra lodret (0 = står, ±π/2 = ligger).
+    torsoAngle(W) {
+      W = W || this.world;
+      const I = B.IDX;
+      return Math.atan2(-(W[I.sh * 3] - W[I.hip * 3]), W[I.sh * 3 + 1] - W[I.hip * 3 + 1]);
+    }
+
+    // Hvor meget springeren vipper væk fra sin grundstilling (mod uret positiv).
+    tilt() {
+      if (this.contact === 'feet') return TR.wrapPi(this.phi);
+      return TR.wrapPi(this.torsoAngle() - this.lieA);
+    }
+
+    // Til rotationsmåleren: hvor meget rotation lægges der i, og hvad rækker det til?
+    rotInfo() {
+      const fx = this.fx;
+      const maxW = fx.rotGain * 0.45;
+      if (this.state === 'bed') {
+        const tilt = this.tilt();
+        const d = Math.max(0, -this.feetY);
+        const E = 0.5 * this.vy * this.vy + 0.5 * BED.K * d * d - GRAV * d;
+        const v = Math.min(Math.sqrt(2 * GRAV * fx.maxApex), Math.sqrt(2 * Math.max(0, E)));
+        const T = (2 * v) / GRAV;
+        const w = Math.abs(fx.rotGain * tilt * TR.clamp(v / 7, 0.25, 1));
+        const tuckI = B.solve({ ...B.shapeTarget('tuck', fx.tight), hand: B.HAND.side }).Isom;
+        const f = Math.cos(this.psiTarget) >= 0 ? 1 : -1;
+        return {
+          phase: 'bed', frac: TR.clamp(tilt / 0.45, -1, 1),
+          dir: Math.abs(tilt) < 0.02 ? '' : Math.sign(tilt) * f > 0 ? 'baglæns' : 'forlæns',
+          straight: (w * T) / TR.TAU, tuck: (w * (I_REF / tuckI) * T * 0.7) / TR.TAU,
+        };
+      }
+      if (this.state === 'air') {
+        const f = this.tracker.facing0 || 1;
+        return { phase: 'air', frac: TR.clamp(this.L / (I_REF * maxW), -1, 1), dir: Math.abs(this.L) < 0.5 ? '' : Math.sign(this.L) * f > 0 ? 'baglæns' : 'forlæns' };
+      }
+      return null;
     }
 
     updateWorld() { B.toWorld(this.body, this.psi, this.phi, this.x, this.y + this.yCorr, this.world); }
@@ -77,36 +125,50 @@
       const d = Math.max(0, -this.feetY);
       const comp = TR.clamp(d / 0.9, 0, 1);
       const rising = this.vy > 0 ? TR.clamp(this.vy / 7, 0, 1) : 0;
-      const hand = [0, 1, 2].map((i) => TR.lerp(B.HAND.bed[i], B.HAND.up[i], rising));
-      this.approachPose(dt, 0.12 + 0.35 * comp, 0.18 + 0.55 * comp, hand, 10);
+      if (this.contact === 'feet') {
+        const hand = [0, 1, 2].map((i) => TR.lerp(B.HAND.bed[i], B.HAND.up[i], rising));
+        this.approachPose(dt, 0.12 + 0.35 * comp, 0.18 + 0.55 * comp, hand, 10);
+      } else if (this.contact === 'back') {
+        this.approachPose(dt, 0.75 - 0.2 * comp, 0.35, B.HAND.lieBack, 6);
+      } else {
+        this.approachPose(dt, 0.1, 0.55, B.HAND.lieFront, 6);
+      }
       this.body = B.solve(this.pose, this.body);
 
       // Vip: holdes pilen længe nok på dugen, tages mere rotation med.
-      this.phi = TR.approach(this.phi, inp.lean * 0.45, 1.1 * dt);
+      if (this.contact === 'feet') {
+        this.phi = TR.approach(this.phi, inp.lean * 0.45, 1.1 * dt);
+      } else {
+        B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW);
+        const err = this.lieA + inp.lean * 0.45 - this.torsoAngle(TMPW);
+        this.phi += TR.clamp(err, -1.1 * dt, 1.1 * dt);
+      }
       this.psi = TR.approach(this.psi, this.psiTarget, 6 * dt);
 
       let a = -GRAV + BED.K * d - (inp.kill ? 9 : BED.C) * this.vy;
       if (inp.push && !inp.kill && d > 0 && this.vy > -1.2) {
         const E = 0.5 * this.vy * this.vy + 0.5 * BED.K * d * d - GRAV * d;
         const apex = Math.max(0, E) / GRAV;
-        a += fx.pushAcc * TR.clamp(1 - apex / fx.maxApex, 0, 1);
+        // Fra ryg eller mave kan man ikke sætte af med benene, så satsen er svagere.
+        a += fx.pushAcc * (this.contact === 'feet' ? 1 : 0.6) * TR.clamp(1 - apex / fx.maxApex, 0, 1);
       }
       this.vy += a * dt;
       this.feetY += this.vy * dt;
       if (this.feetY >= 0) {
-        if (this.vy > 0.8) { this.y = this.feetY + this.standOffset(); this.takeoff(); return; }
+        if (this.vy > 0.8) { this.y = this.feetY + this.contactOffset(); this.takeoff(); return; }
         this.feetY = 0;
         if (this.vy > 0) this.vy = 0;
       }
-      this.y = this.feetY + this.standOffset();
+      this.y = this.feetY + this.contactOffset();
     }
 
     takeoff() {
       const fx = this.fx;
       const vmax = Math.sqrt(2 * GRAV * fx.maxApex);
       this.vy = Math.min(this.vy, vmax);
-      const tilt = TR.wrapPi(this.phi);
-      this.phi = tilt;
+      const tilt = this.tilt();
+      if (this.contact === 'feet') this.phi = tilt;
+      else this.phi = TR.wrapPi(this.phi);
       this.psi = this.psiTarget;
       const sz = TR.clamp(this.vy / 7, 0.25, 1);
       this.omega = fx.rotGain * tilt * sz;
@@ -115,7 +177,8 @@
       this.state = 'air';
       this.airT = 0;
       this.apexSent = false;
-      this.tracker.start(this.phi, this.psi, this.x);
+      this.tracker.start(this.phi, this.psi, this.x, this.contact, tilt);
+      this.prevTorso = this.torsoAngle(B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW));
       this.emit('takeoff', { vy: this.vy });
     }
 
@@ -156,7 +219,11 @@
       this.x += this.vx * dt;
       this.y += this.vy * dt;
       if (vyPrev > 0 && this.vy <= 0) this.emit('apex', { height: this.height });
-      this.tracker.update(dphi, dpsi, shapeCat(this.pose), dt);
+      // Tæl rotationen efter overkroppens faktiske vinkel (også når positionen ændres).
+      const ta = this.torsoAngle(B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW));
+      const dTorso = TR.wrapPi(ta - this.prevTorso);
+      this.prevTorso = ta;
+      this.tracker.update(dTorso, dpsi, shapeCat(this.pose), dt, dphi);
 
       if (this.vy < 0) {
         B.toWorld(this.body, this.psi, this.phi, this.x, this.y, this.world);
@@ -173,18 +240,35 @@
       const ax = (W[I.ankleL * 3] + W[I.ankleR * 3]) / 2, ay = (W[I.ankleL * 3 + 1] + W[I.ankleR * 3 + 1]) / 2;
       const legAngle = Math.atan2(W[I.hip * 3] - ax, W[I.hip * 3 + 1] - ay);
       const twistRes = Math.abs(this.psi - Math.round(this.psi / Math.PI) * Math.PI);
-      const tol = this.fx.landTol;
       const bodyAngle = -legAngle; // mod uret positiv, som phi
+      // Ligger kroppen vandret? Så er det en landing på ryg eller mave.
+      const ta = this.torsoAngle(W);
+      const lieA = ta >= 0 ? Math.PI / 2 : -Math.PI / 2;
+      const lieDev = ta - lieA;
+      const faceUp = W[I.nose * 3 + 1] - W[I.head * 3 + 1] > 0;
+      const headFirst = (lo.idx === I.head || lo.idx === I.neck) && W[I.head * 3 + 1] < W[I.hip * 3 + 1] - 0.2;
+      const lying = !headFirst && Math.abs(lieDev) < this.fx.dropTol * 1.6;
+      const kind = lying ? (faceUp ? 'back' : 'front') : 'feet';
+      const tol = kind === 'feet' ? this.fx.landTol : this.fx.dropTol;
+      const dev = kind === 'feet' ? bodyAngle : lieDev;
       let reason = null;
       if (!onBed) reason = surface === 0 ? 'Landede på rammen!' : 'Landede ved siden af trampolinen!';
-      else if (!lo.feet) reason = this.pose.hip > 1.2 || this.pose.knee > 1.3 ? 'Åbnede ikke i tide' : 'Landede ikke på fødderne';
+      else if (headFirst) reason = 'Landede på hovedet';
+      else if (kind !== 'feet') {
+        if (Math.abs(lieDev) > tol) reason = Math.sign(lieDev) === Math.sign(this.omega) ? 'Over-roteret' : 'Under-roteret';
+        else if (this.pose.knee > 1.5 || this.pose.hip > 1.9) reason = 'Landede sammenkrøllet';
+        else if (twistRes > 0.7) reason = 'Skruen var ikke færdig';
+      }
+      else if (!lo.feet) reason = this.pose.hip > 1.2 || this.pose.knee > 1.3 ? 'Åbnede ikke i tide' : 'Landede skævt';
       else if (Math.abs(legAngle) > tol) reason = Math.sign(bodyAngle) === Math.sign(this.omega) ? 'Over-roteret' : 'Under-roteret';
       else if (this.pose.hip > 1.2 || this.pose.knee > 1.3) reason = 'Åbnede ikke i tide';
       else if (twistRes > 0.7) reason = 'Skruen var ikke færdig';
       if (reason) { this.crash(reason, onBed, surface); return; }
 
-      const skill = this.tracker.finish();
-      const landing = { legAngle, twistRes, x: this.x, hip: this.pose.hip, knee: this.pose.knee, tol, vy: this.vy };
+      const skill = this.tracker.finish(kind, kind === 'feet' ? TR.wrapPi(ta) : lieDev);
+      const landing = { kind, legAngle: dev, twistRes, x: this.x, hip: this.pose.hip, knee: this.pose.knee, tol, vy: this.vy };
+      this.contact = kind;
+      this.lieA = kind === 'feet' ? 0 : lieA;
       this.lastLanding = landing;
       const oldY = this.y;
       this.state = 'bed';
@@ -195,7 +279,7 @@
       this.psi = this.psiTarget + (this.psi - halfTurns * Math.PI);
       this.twistRate = 0; this.omega = 0; this.L = 0; this.vx = 0;
       this.body = B.solve(this.pose, this.body);
-      this.y = this.feetY + this.standOffset();
+      this.y = this.feetY + this.contactOffset();
       this.yCorr += oldY - this.y;
       this.emit('land', { skill, landing, speed: -this.vy });
     }

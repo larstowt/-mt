@@ -36,6 +36,27 @@
     'F|12|1,0,1': 'Barani-ind triffus',
   };
 
+  // Spring der starter eller slutter på ryg eller mave: fra>til|retning|kvarte|halve skruer
+  const POS = { feet: 'fødder', back: 'ryg', front: 'mave' };
+  const POS_CODE = { feet: 'F', back: 'R', front: 'M' };
+  const NAMED_DROP = {
+    'feet>back|B|1|0': 'Rygfald',
+    'feet>front|F|1|0': 'Mavefald',
+    'back>feet|F|1|0': 'Fra ryg til fødder',
+    'front>feet|B|1|0': 'Fra mave til fødder',
+    'back>feet|F|5|0': 'Ball-out',
+    'back>feet|F|5|1': 'Ball-out barani',
+    'back>feet|F|5|3': 'Ball-out rudi',
+    'front>feet|B|5|0': 'Cody',
+    'front>feet|B|5|2': 'Cody med hel skrue',
+    'back>feet|B|3|0': 'Kaboom',
+    'back>front|F|2|0': 'Fra ryg til mave',
+    'front>back|B|2|0': 'Fra mave til ryg',
+    'back>back||0|0': 'Ryg til ryg',
+    'front>front||0|0': 'Mave til mave',
+  };
+  const quarterWord = (q) => `${Math.floor(q / 4) || ''}${['', '¼', '½', '¾'][q % 4]}`;
+
   function sumArr(a) { return a.reduce((s, v) => s + v, 0); }
 
   // Sværhedsgrad tilnærmet FIG-reglerne.
@@ -52,7 +73,9 @@
     return TR.round1(d);
   }
 
-  function describe(q, dir, halves, shape) {
+  function describe(q, dir, halves, shape, from, to) {
+    from = from || 'feet'; to = to || 'feet';
+    if (from !== 'feet' || to !== 'feet') return describeDrop(q, dir, halves, shape, from, to);
     const nSom = Math.floor(q / 4);
     const H = sumArr(halves);
     const sym = shape;
@@ -78,6 +101,22 @@
     return { code, key, name, fullName: `${name} ${SHAPE_NAME[shape]}`, dd: difficulty(q, halves, shape), jump: false };
   }
 
+  function describeDrop(q, dir, halves, shape, from, to) {
+    const H = sumArr(halves);
+    const code = `${POS_CODE[from]} ${q} ${halves.join(' ')} ${shape} ${POS_CODE[to]}`;
+    const key = `${from}>${to}|${dir}|${code}`;
+    let name = NAMED_DROP[`${from}>${to}|${dir}|${q}|${H}`];
+    if (!name) {
+      const parts = [];
+      if (q > 0) parts.push(`${quarterWord(q)} salto ${dir === 'B' ? 'baglæns' : 'forlæns'}`);
+      if (H > 0) parts.push(`${q > 0 ? 'm. ' : ''}${HALF_WORD[H] || H / 2} skrue`);
+      name = `${from !== 'feet' ? `Fra ${POS[from]}: ` : ''}${parts.join(' ') || 'hop'} til ${POS[to]}`;
+      name = cap(name);
+    }
+    const fullName = q >= 4 ? `${name} ${SHAPE_NAME[shape]}` : name;
+    return { code, key, name, fullName, dd: q === 0 ? TR.round1(0.1 * H) : difficulty(q, halves, shape), jump: q === 0 && H === 0, drop: true };
+  }
+
   function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : s; }
 
   // Fordel det samlede antal halve skruer på saltoerne, så summen passer.
@@ -100,19 +139,23 @@
 
   class TrickTracker {
     constructor() { this.active = false; }
-    start(phi, psi, x) {
+    start(phi, psi, x, from, tilt) {
       this.active = true;
+      this.from = from || 'feet';
+      this.tilt0 = tilt || 0;
       this.phi0 = phi; this.psi0 = psi; this.x0 = x;
-      this.dphi = 0; this.dpsi = 0; this.t = 0;
+      this.dphi = 0; this.raw = 0; this.dpsi = 0; this.t = 0;
       this.shapeW = { o: 0, '<': 0, '/': 0 };
       this.shapeT = { o: 0, '<': 0, '/': 0 };
       this.buckets = [0, 0, 0, 0, 0, 0];
       this.lastClosedT = -1;
       this.facing0 = Math.cos(psi) >= 0 ? 1 : -1;
     }
-    update(dphi, dpsi, shape, dt) {
+    // dphi: overkroppens rotation (til genkendelse); raw: saltovinklen (til live-visning og styring)
+    update(dphi, dpsi, shape, dt, raw) {
       if (!this.active) return;
-      this.dphi += dphi; this.dpsi += dpsi; this.t += dt;
+      this.dphi += dphi;
+      this.raw += raw == null ? dphi : raw; this.dpsi += dpsi; this.t += dt;
       this.shapeW[shape] += Math.abs(dphi);
       this.shapeT[shape] += dt;
       const b = Math.min(Math.floor(Math.abs(this.dphi) / TAU), this.buckets.length - 1);
@@ -123,26 +166,31 @@
     // Hvad er der roteret indtil videre (til live-visning).
     live() {
       if (!this.active) return null;
-      return { quarters: Math.floor(Math.abs(this.dphi) / (Math.PI / 2) + 0.05), halves: Math.floor(Math.abs(this.dpsi) / Math.PI + 0.05) };
+      return { quarters: Math.floor(Math.abs(this.raw) / (Math.PI / 2) + 0.05), halves: Math.floor(Math.abs(this.dpsi) / Math.PI + 0.05) };
     }
-    finish() {
+    // to: hvor springet landede (fødder/ryg/mave); dev: afvigelse fra landestillingen (mod uret).
+    finish(to, dev) {
       this.active = false;
-      const nSom = Math.round(Math.abs(this.dphi) / TAU);
-      const q = nSom * 4;
+      to = to || 'feet';
+      // Rotation mellem grundstillingerne (start- og slutvip trækkes fra).
+      const rot = this.dphi + this.tilt0 - (dev || 0);
+      let q = Math.round(Math.abs(rot) / (Math.PI / 2));
+      if (this.from === 'feet' && to === 'feet') q = Math.round(q / 4) * 4;
+      const nSom = Math.floor(q / 4);
       const H = Math.round(Math.abs(this.dpsi) / Math.PI);
       let shape;
-      if (nSom === 0) {
+      if (q < 4) {
         shape = this.shapeT.o > 0.18 ? 'o' : this.shapeT['<'] > 0.18 ? '<' : '/';
       } else {
         const w = this.shapeW;
         shape = w.o >= w['<'] && w.o >= w['/'] ? 'o' : w['<'] >= w['/'] ? '<' : '/';
       }
-      const dirSign = Math.sign(this.dphi) * this.facing0;
-      const dir = nSom === 0 ? '' : dirSign > 0 ? 'B' : 'F';
-      const halves = distribute(this.buckets, Math.max(1, nSom), H);
-      const d = describe(q, dir, halves, shape);
+      const dirSign = Math.sign(rot) * this.facing0;
+      const dir = q === 0 ? '' : dirSign > 0 ? 'B' : 'F';
+      const halves = distribute(this.buckets, Math.max(1, Math.round(q / 4)), H);
+      const d = describe(q, dir, halves, shape, this.from, to);
       return {
-        ...d, quarters: q, somersaults: nSom, dir, halves, totalHalves: H, shape,
+        ...d, quarters: q, somersaults: nSom, dir, halves, totalHalves: H, shape, from: this.from, to,
         tof: this.t, x0: this.x0,
         openTime: this.lastClosedT < 0 ? this.t : this.t - this.lastClosedT,
         usedClosed: this.lastClosedT >= 0,
@@ -151,7 +199,7 @@
   }
 
   TR.TrickTracker = TrickTracker;
-  TR.Tricks = { describe, difficulty, distribute, HALF_WORD, SHAPE_NAME, SHAPE_LONG, NAMED };
+  TR.Tricks = { describe, difficulty, distribute, HALF_WORD, SHAPE_NAME, SHAPE_LONG, NAMED, NAMED_DROP, POS };
 
   // Tekst til live-visning i luften, fx "1¼ salto · ½ skrue".
   TR.liveText = function (live) {
