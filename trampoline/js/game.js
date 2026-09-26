@@ -147,15 +147,15 @@
       if (this.def.type !== 'height') return;
       if (h > this.bestH) this.bestH = h;
       if (this.reached < 0 && h >= this.def.target) {
-        this.reached = 8;
-        this.game.renderer.popup('Mål nået! ★', { color: '#ffd166', sub: 'Bliv ved i 8 sek. for flere stjerner' });
+        this.reached = 12;
+        this.game.renderer.popup('Mål nået! ★', { color: '#ffd166', sub: 'Bliv ved i 12 sek. for flere stjerner' });
         this.game.sfx.win();
       }
     }
     update(dt) {
       if (this.reached > 0) {
         this.reached -= dt;
-        if (this.reached <= 0 || this.bestH >= this.def.target + 0.8) this.done(TR.Challenges.starsFor(this.def, this.bestH), [['Bedste højde', `${TR.fmt(this.bestH)} m`]]);
+        if (this.reached <= 0 || this.bestH >= this.def.target + 1.6) this.done(TR.Challenges.starsFor(this.def, this.bestH), [['Bedste højde', `${TR.fmt(this.bestH)} m`]]);
       }
     }
     onSkill(skill, ev) {
@@ -271,6 +271,7 @@
       this.demo = true;
       this.bot = new DemoBot();
       this.paused = false;
+      this.timeScale = 0.75; // spillet kører lidt langsommere end virkeligheden
       this.acc = 0; this.last = 0;
       this.dirty = false;
       this.ui = null;
@@ -402,13 +403,13 @@
       const dt = Math.min(0.05, this.last ? (ts - this.last) / 1000 : 0.016);
       this.last = ts;
       if (!this.paused) {
-        this.acc += dt;
+        this.acc += dt * this.timeScale;
         let n = 0;
         while (this.acc >= STEP && n < 40) {
           this.athlete.step(STEP, this.stepInput(STEP));
           this.acc -= STEP; n++;
         }
-        if (this.mode) this.mode.update(dt);
+        if (this.mode) this.mode.update(dt * this.timeScale);
       }
       this.renderer.render(this, this.paused ? 0 : dt);
       if (this.ui) this.ui.frame(dt);

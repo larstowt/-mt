@@ -35,6 +35,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 - **Timing af satsen:** en ring på dugen viser, hvornår man skal trykke SATS, og man får at vide, om satsen var perfekt, god, for tidlig eller for sen. Perfekt timing giver mest højde.
 - **Rotationsmåler:** viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket.
 - **Skruer i alle positioner**, også lukket og hoftebøjet. Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
+- **Høje spring i roligt tempo:** man kan hoppe op til ca. 6 m (over 10 m med fuld Kraft), og spillet kører i 75 % tempo, så der er tid til at se og styre springene. Kameraet følger med op.
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
 - **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.
 - **Pointsystem som i FIG-trampolin:** D (sværhedsgrad), E (udførelse med fradrag), T (flyvetid) og H (placering). Springene får FIG-koder, fx `8 2 0 o` for en hel-ind lukket, og rigtige navne som Barani, Rudi, Randy, Miller og Triffus.

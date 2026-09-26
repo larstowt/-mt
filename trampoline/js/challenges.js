@@ -25,7 +25,7 @@
     {
       id: 'hall', name: 'Klubhallen', need: 0, tagline: 'Hvor det hele starter.',
       challenges: [
-        { id: 'h1', title: 'Første hop', desc: 'Pump dig op til 2 meters højde.', type: 'height', target: 2.0, hint: 'Tryk SATS (mellemrum), når ringen på dugen rammer målet og bliver gul.' },
+        { id: 'h1', title: 'Første hop', desc: 'Pump dig op til 4 meters højde.', type: 'height', target: 4.0, hint: 'Tryk SATS (mellemrum), når ringen på dugen rammer målet og bliver gul.' },
         { id: 'h2', title: 'Salto baglæns', desc: 'Land en salto baglæns – valgfri position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0 }, hint: 'Vip med ← på dugen (se rotationsmåleren), hold LUKKET (Z) i luften, og slip i god tid før landing.' },
         { id: 'h3', title: 'Salto forlæns', desc: 'Land en salto forlæns.', type: 'skill', match: { dir: 'F', q: 4, halves: 0 }, hint: 'Vip den anden vej på dugen – forlæns afhænger af, hvilken vej du vender.' },
         { id: 'h4', title: 'Hoftebøjet', desc: 'Land en salto baglæns i hoftebøjet position.', type: 'skill', match: { dir: 'B', q: 4, halves: 0, shape: '<' }, hint: 'Hold X for hoftebøjet.' },
@@ -37,7 +37,7 @@
     {
       id: 'sunset', name: 'Solnedgang', need: 7, tagline: 'Spring ind i aftenrøden.',
       challenges: [
-        { id: 's1', title: 'Højt oppe', desc: 'Nå 3,2 meters højde.', type: 'height', target: 3.2, hint: 'Kraft-færdigheden giver højere spring.' },
+        { id: 's1', title: 'Højt oppe', desc: 'Nå 6,5 meters højde.', type: 'height', target: 6.5, hint: 'Kraft-færdigheden giver højere spring.' },
         { id: 's2', title: 'Hel skrue', desc: 'Salto baglæns med hel skrue.', type: 'skill', match: { dir: 'B', q: 4, halves: 2 }, hint: 'Hold C lidt længere for en hel skrue.' },
         { id: 's3', title: 'Skru i lukket', desc: 'Land en hel skrue i LUKKET position.', type: 'skill', match: { dir: 'B', q: 4, halves: 2, shape: 'o' }, hint: 'Hold Z og C samtidig. Lukket skruer langsommere.' },
         { id: 's4', title: 'Tre positioner', desc: 'Land salto baglæns lukket, hoftebøjet og strakt i træk.', type: 'sequence',
@@ -79,7 +79,7 @@
 
   function starsFor(def, value) {
     switch (def.type) {
-      case 'height': return value >= def.target + 0.8 ? 3 : value >= def.target + 0.4 ? 2 : value >= def.target ? 1 : 0;
+      case 'height': return value >= def.target + 1.6 ? 3 : value >= def.target + 0.8 ? 2 : value >= def.target ? 1 : 0;
       case 'score': return value >= def.target * 1.8 ? 3 : value >= def.target * 1.4 ? 2 : value >= def.target ? 1 : 0;
       case 'routine': return value >= def.target + 10 ? 3 : value >= def.target + 5 ? 2 : value >= def.target ? 1 : 0;
       default: return starsFromE(value);
@@ -88,7 +88,7 @@
 
   function starsText(def) {
     switch (def.type) {
-      case 'height': return [`${TR.fmt(def.target)} m`, `${TR.fmt(def.target + 0.4)} m`, `${TR.fmt(def.target + 0.8)} m`];
+      case 'height': return [`${TR.fmt(def.target)} m`, `${TR.fmt(def.target + 0.8)} m`, `${TR.fmt(def.target + 1.6)} m`];
       case 'score': return [def.target, Math.round(def.target * 1.4), Math.round(def.target * 1.8)].map(String);
       case 'routine': return [def.target, def.target + 5, def.target + 10].map((v) => `${v} point`);
       default: return ['Landet', 'E ≥ 1,5', 'E ≥ 1,8'];

@@ -44,16 +44,22 @@
     }
 
     camera(athlete, dt) {
+      // Zoom ud op til ca. 10 m synsfelt; hopper man højere, følger kameraet med op.
       const top = Math.max(athlete.y, 1) + 1.4;
-      const need = Math.max(6.3, top - WORLD_BOTTOM + 0.4);
+      const need = TR.clamp(top - WORLD_BOTTOM + 0.4, 6.3, 10);
       const k = need > this.viewH ? 4 : 1.2;
       this.viewH += (need - this.viewH) * Math.min(1, k * dt);
       const W = this.W, H = this.H;
       const ppm = Math.min(H / this.viewH, W / 7.2);
       const extra = H - this.viewH * ppm;
       const bottomPad = Math.max(this.safeBottom * 0.55, extra * 0.45);
+      const visible = (H - bottomPad) / ppm;
+      const wantBottom = Math.max(WORLD_BOTTOM, athlete.y + 1.9 - visible);
+      if (this.camBottom == null) this.camBottom = WORLD_BOTTOM;
+      this.camBottom += (wantBottom - this.camBottom) * Math.min(1, (wantBottom > this.camBottom ? 8 : 5) * dt);
+      const bottom = this.camBottom;
       const sx = (x) => W / 2 + x * ppm;
-      const sy = (y) => H - bottomPad - (y - WORLD_BOTTOM) * ppm;
+      const sy = (y) => H - bottomPad - (y - bottom) * ppm;
       return { W, H, ppm, sx, sy, floorY: sy(BED.floor), boardText: this.boardText };
     }
 
@@ -325,9 +331,9 @@
       ctx.font = `600 ${Math.max(10, Math.min(13, 0.16 * cam.ppm))}px system-ui, sans-serif`;
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       const x = Math.max(8, cam.sx(-3.4));
-      for (let m = 1; m <= 12; m++) {
+      for (let m = 1; m <= 16; m++) {
         const y = cam.sy(m + 1.08);
-        if (y < 10) break;
+        if (y < 10) continue;
         ctx.fillStyle = 'rgba(255,255,255,0.22)';
         ctx.fillRect(x, y, m % 2 ? 10 : 16, 2);
         ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,14,40,0.35)';

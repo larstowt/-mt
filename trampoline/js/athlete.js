@@ -160,6 +160,8 @@
     }
 
     step(dt, input) {
+      input = input || {};
+      if (!input.lean) input = { ...input, lean: 0 };
       if (this.state === 'bed') this.stepBed(dt, input);
       else if (this.state === 'air') this.stepAir(dt, input);
       else this.stepCrash(dt);
@@ -200,6 +202,8 @@
       S.t += dt;
       if (S.held && !inp.push) S.held = false;
       if (inp.push && !this.pushPrev && !S.held && S.pressT == null) S.pressT = S.t;
+      // Står man stille (fx efter et styrt) og holder SATS, tæller det som et tryk.
+      if (inp.push && S.speed < 3 && S.pressT == null) { S.held = false; S.pressT = S.t; }
       if (S.pressT != null && S.bottomT == null && this.vy >= 0) S.bottomT = S.pressT; // fra stilstand
       this.judgeSats();
 

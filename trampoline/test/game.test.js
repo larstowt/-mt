@@ -38,7 +38,7 @@ test('pumper op i højde og holder sig under maks', () => {
 });
 
 test('salto baglæns lukket genkendes med FIG-kode og DD', () => {
-  const r = jump({}, { shape: 'tuck' });
+  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.15, shape: 'tuck', to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.code, '4 0 o');
   assert.equal(r.skill.dir, 'B');
@@ -46,21 +46,21 @@ test('salto baglæns lukket genkendes med FIG-kode og DD', () => {
 });
 
 test('barani (forlæns med ½ skrue) i hoftebøjet', () => {
-  const r = jump({}, { shape: 'pike', dir: -1, twist: 1 });
+  const [r] = sequence({}, [{ q: 4, dir: -1, tilt: 0.2, shape: 'pike', twist: 1, to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.name, 'Barani');
   assert.equal(r.skill.code, '4 1 <');
 });
 
 test('skrue i lukket position er mulig', () => {
-  const r = jump({}, { shape: 'tuck', twist: 2, twistAt: 0.3 });
+  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.15, shape: 'tuck', twist: 2, to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.totalHalves, 2);
   assert.equal(r.skill.shape, 'o');
 });
 
 test('dobbelt salto kræver træning', () => {
-  const r = jump({ power: 3, rotation: 3, flex: 3, air: 2 }, { som: 2, lean: 0.35 });
+  const [r] = sequence({ power: 3, rotation: 3, flex: 3, air: 2 }, [{ q: 8, dir: 1, tilt: 0.3, shape: 'tuck', to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.quarters, 8);
 });
@@ -148,7 +148,8 @@ function sequence(levels, steps, pump = 6) {
     const p = steps[idx];
     if (p && a.state === 'bed' && a.tilt() * p.dir < p.tilt) inp.lean = p.dir;
     if (cur && a.state === 'air') {
-      const rem = (cur.q * Math.PI) / 2 - Math.abs(a.tracker.dphi + a.tracker.tilt0);
+      const tr = a.tracker;
+      const rem = (cur.q * Math.PI) / 2 - Math.abs((tr.from === 'feet' ? tr.raw : tr.dphi) + tr.tilt0);
       const hLand = cur.to === 'feet' ? 1.05 : 0.25;
       const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - hLand)))) / TR.GRAV;
       const w = Math.abs(a.L) / Istr;
@@ -259,6 +260,7 @@ test('arkade: hoftebøjet og lukket salto på første niveau', () => {
 test('arkade: pilene i luften ændrer ikke rotationen, og uden knapper bremses der ned', () => {
   const a = new TR.Athlete({}, 'arcade');
   for (let i = 0; i < 240 * 8; i++) a.step(1 / 240, { lean: 0, push: true });
+  while (a.state !== 'air') a.step(1 / 240, { lean: 0, push: true });
   while (a.state !== 'bed') a.step(1 / 240, { lean: 0, push: true });
   while (a.state === 'bed') a.step(1 / 240, { lean: 1, push: true });
   for (let i = 0; i < 60; i++) a.step(1 / 240, { lean: -1, straight: true });

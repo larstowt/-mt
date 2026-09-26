@@ -52,9 +52,9 @@
     const g = (k) => TR.clamp(lv[k] | 0, 0, TR.SKILL_MAX);
     const p = g('power'), r = g('rotation'), t = g('twist'), f = g('flex'), a = g('air'), l = g('landing');
     return {
-      maxApex: 3.4 + 0.55 * p, // meter over dugen
-      pushAcc: 24 + 3 * p,
-      rotGain: 10 * (1 + 0.14 * r),
+      maxApex: 6.8 + 1.1 * p, // meter over dugen
+      pushAcc: 34 + 4 * p,
+      rotGain: 7.5 * (1 + 0.14 * r),
       twistRate: 9.5 * (1 + 0.17 * t), // rad/s i strakt
       twistStop: 70,
       shapeRate: 8 * (1 + 0.2 * f),
@@ -62,7 +62,7 @@
       air: 2.2 + 0.5 * a,
       // Arkade-styring (som Walaber's Trampoline): rotationen kommer fra afsættet;
       // hold en position for at rotere, slip alle knapper for at bremse ned.
-      arcadeGain: 15 * (1 + 0.12 * r),
+      arcadeGain: 11 * (1 + 0.12 * r),
       arcadeSlow: 0.28,
       arcadeBrake: 10 + 2 * a,
       landTol: 0.36 + 0.05 * l,
