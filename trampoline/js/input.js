@@ -7,11 +7,11 @@
     ArrowLeft: 'left',
     ArrowRight: 'right',
     Space: 'push', KeyW: 'push',
-    ArrowDown: 'kill',
+    ArrowUp: 'kill',
+    ArrowDown: 'twist',
     KeyS: 'tuck',
     KeyD: 'pike',
     KeyF: 'straight',
-    ShiftLeft: 'twist', ShiftRight: 'twist',
   };
 
   class Input {
