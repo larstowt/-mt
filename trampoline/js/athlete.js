@@ -308,7 +308,8 @@
         this.armed = null;
         this.omega = this.spin0 * 0.5; this.L = this.body.Isom * this.omega;
       } else this.spin0 = 0;
-      this.vx = -Math.sin(tilt) * this.vy * fx.travel;
+      this.vx = -Math.sin(tilt) * this.vy * fx.travel + (this.skewVx || 0);
+      this.skewVx = 0;
       this.state = 'air';
       this.airT = 0;
       this.airPressAt = null;
@@ -412,7 +413,7 @@
         else if (twistRes > 0.7) reason = 'Skruen var ikke færdig';
       }
       else if (!lo.feet) reason = this.pose.hip > 1.2 || this.pose.knee > 1.3 ? 'Åbnede ikke i tide' : 'Landede skævt';
-      else if (Math.abs(legAngle) > tol) reason = Math.sign(bodyAngle) === Math.sign(this.omega) ? 'Over-roteret' : 'Under-roteret';
+      else if (Math.abs(legAngle) > this.fx.skewMax) reason = Math.sign(bodyAngle) === Math.sign(this.omega) ? 'Over-roteret' : 'Under-roteret';
       else if (this.pose.hip > 1.2 || this.pose.knee > 1.3) reason = 'Åbnede ikke i tide';
       else if (twistRes > 0.7) reason = 'Skruen var ikke færdig';
       if (reason) { this.crash(reason, onBed, surface); return; }
@@ -440,6 +441,16 @@
       const off = TR.clamp((Math.abs(this.x) - 0.35) / (BED.half - 0.35), 0, 1);
       if (off > 0) this.vy *= Math.sqrt(1 - 0.25 * off);
       landing.heightLoss = 0.25 * off;
+      // Skæv landing (mellem tolerancen og ca. 60°): man mister højde og bliver kastet til siden.
+      this.skewVx = 0;
+      if (kind === 'feet' && Math.abs(legAngle) > tol) {
+        const s = TR.clamp((Math.abs(legAngle) - tol) / (this.fx.skewMax - tol), 0, 1);
+        const loss = 0.25 + 0.45 * s;
+        this.vy *= Math.sqrt(1 - loss);
+        this.skewVx = Math.sign(legAngle) * (0.8 + 2.4 * s);
+        landing.skew = true;
+        landing.heightLoss = 1 - (1 - landing.heightLoss) * (1 - loss);
+      }
       this.newContact(-this.vy, !!this.pushPrev && !fresh);
       if (fresh) this.sats.pressT = -since;
       this.emit('land', { skill, landing, speed: -this.vy });

@@ -8,7 +8,7 @@
     const ded = [];
     const add = (label, v) => { v = TR.round1(v); if (v > 0) ded.push({ label, v }); };
     const a = Math.abs(land.legAngle);
-    add('Skæv landing', 0.5 * (a / land.tol) - 0.05);
+    add('Skæv landing', Math.min(1.2, 0.5 * (a / land.tol) - 0.05));
     if (land.twistRes > 0.12) add('Ufærdig skrue', 0.3 * (land.twistRes / 0.7));
     if (skill.quarters >= 4 && skill.usedClosed) {
       if (skill.openTime < 0.1) add('Åbnede sent', 0.2);

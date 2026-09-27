@@ -57,7 +57,7 @@
       maxApex: 4.2 + 0.35 * p, // loft for satsen, meter over dugen
       pushAcc: 28 + 3 * p,
       rotGain: 8 * (1 + 0.05 * r),
-      twistRate: 9.5 * (1 + 0.17 * t), // rad/s i strakt
+      twistRate: 12.5 * (1 + 0.17 * t), // rad/s i strakt (~2 skruer/s uden træning, som i Walaber)
       twistStop: 70,
       shapeRate: 8 * (1 + 0.2 * f),
       tight: f,
@@ -68,6 +68,8 @@
       arcadeSlow: 0.1,
       arcadeBrake: 18 + 3 * a,
       landTol: 0.36 + 0.05 * l,
+      // Skæve landinger (op til ca. 60°) er ikke styrt – men giver lavt afsæt og vandring
+      skewMax: 1.05 + 0.04 * l,
       dropTol: 0.45 + 0.04 * l,
       travel: 0.07 * (1 - 0.1 * l),
     };
