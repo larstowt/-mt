@@ -307,7 +307,7 @@
         this.spin0 = this.armed ? this.armed.dir * this.armed.amt * fx.arcadeGain * 0.45 * sz : 0;
         this.armed = null;
         this.omega = this.spin0 * 0.5; this.L = this.body.Isom * this.omega;
-        this.glide = fx.arcadeSlow;
+        this.glide = 0;
       } else this.spin0 = 0;
       this.vx = -Math.sin(tilt) * this.vy * fx.travel + (this.skewVx || 0);
       this.skewVx = 0;
@@ -343,10 +343,13 @@
       if (this.control === 'arcade') {
         // Rotationen er givet ved afsættet. Holdes en position (strakt, hoftebøjet, lukket
         // eller skrue), roteres der med den; slippes alt, bremses der ned til en langsom rotation.
-        if (holding) this.glide = fx.arcadeSlow;
-        else this.glide = TR.approach(this.glide == null ? fx.arcadeSlow : this.glide, fx.arcadeGlide, 0.5 * dt);
-        const mult = holding ? Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32)) : this.glide;
-        const target = (this.spin0 || 0) * mult;
+        // glide går fra 0 (lige åbnet) til 1 (glidefart) på ca. 0,4 s
+        this.glide = holding ? 0 : TR.approach(this.glide || 0, 1, 2.5 * dt);
+        const s0 = this.spin0 || 0;
+        const target = holding
+          ? s0 * Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32))
+          : Math.sign(s0) * Math.min(Math.abs(s0) * TR.lerp(fx.arcadeSlow, fx.arcadeGlide, this.glide),
+            TR.lerp(fx.arcadeSlowMax, fx.arcadeGlideMax, this.glide));
         const faster = Math.abs(target) > Math.abs(this.omega);
         this.omega = TR.approach(this.omega, target, (faster ? 30 : fx.arcadeBrake) * dt);
         this.L = this.omega * this.body.Isom;

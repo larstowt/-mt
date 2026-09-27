@@ -65,11 +65,11 @@
       // Arkade-styring (som Walaber's Trampoline): rotationen kommer fra afsættet;
       // hold en position for at rotere, slip alle knapper for at bremse ned.
       arcadeGain: 9.5 * (1 + 0.28 * r),
-      // Som i Walaber: når man åbner, falder farten brat (~0,1 s) til ca. halvdelen af strakt fart,
-      // og glider derefter langsomt ned mod ca. en fjerdedel frem mod landing.
-      arcadeSlow: 0.55,
-      arcadeGlide: 0.28,
-      arcadeBrake: 45 + 4 * a,
+      // Som i Walaber: når man åbner, falder farten brat (~0,1 s) og glider så langsomt ned
+      // frem mod landing. Farten har et fast loft, så den ikke vokser med Rotation-færdigheden.
+      arcadeSlow: 0.35, arcadeSlowMax: 1.6, // rad/s lige efter åbning (~90°/s)
+      arcadeGlide: 0.15, arcadeGlideMax: 0.7, // rad/s frem mod landing (~40°/s)
+      arcadeBrake: 60 + 4 * a,
       landTol: 0.36 + 0.05 * l,
       // Skæve landinger (op til ca. 60°) er ikke styrt – men giver lavt afsæt og vandring
       skewMax: 1.05 + 0.04 * l,

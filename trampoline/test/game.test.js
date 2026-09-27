@@ -249,7 +249,9 @@ function arcade(levels, { q = 4, dir = 1, shape = 'straight', tilt = 0.3 }) {
     if (act && a.state === 'air') {
       const rem = (q * Math.PI) / 2 - Math.abs(a.tracker.raw + a.tracker.tilt0);
       const tl = (a.vy + Math.sqrt(Math.max(0, a.vy * a.vy + 2 * TR.GRAV * (a.y - 1.05)))) / TR.GRAV;
-      const w = Math.abs(a.omega), ws = Math.abs(a.fx.arcadeSlow * a.spin0), b = a.fx.arcadeBrake;
+      const fx = a.fx, s0 = Math.abs(a.spin0);
+      const w = Math.abs(a.omega), b = fx.arcadeBrake;
+      const ws = Math.min(s0 * (fx.arcadeSlow + fx.arcadeGlide) / 2, (fx.arcadeSlowMax + fx.arcadeGlideMax) / 2);
       const tb = Math.max(0, (w - ws) / b);
       const coast = ((w + ws) / 2) * Math.min(tb, tl) + ws * Math.max(0, tl - tb);
       if (rem > coast) inp[shape] = true;
@@ -289,11 +291,11 @@ test('arkade: pilene lader op uden at rotere; slippes de i luften, bruges ladnin
   const w = a.omega;
   // Som i Walaber: brat opbremsning (~0,1 s) til ca. en tredjedel, derefter langsom glidning
   for (let i = 0; i < 24; i++) a.step(1 / 240, {});
-  assert.ok(a.omega < a.fx.arcadeSlow * a.spin0 * 1.15, `brat opbremsning (${a.omega})`);
-  assert.ok(a.omega > a.fx.arcadeGlide * a.spin0, `men stadig en synlig rotation (${a.omega})`);
+  assert.ok(a.omega < a.fx.arcadeSlowMax * 1.1, `brat opbremsning (${a.omega})`);
+  assert.ok(a.omega > 0.3, `men stadig en synlig rotation (${a.omega})`);
   for (let i = 0; i < 48; i++) a.step(1 / 240, {});
   assert.ok(a.omega < w - 1, `uden knapper bremses der ned (${a.omega} < ${w})`);
-  assert.ok(a.omega >= a.fx.arcadeGlide * a.spin0 - 0.01);
+  assert.ok(a.omega >= Math.min(a.fx.arcadeGlide * a.spin0, a.fx.arcadeGlideMax) - 0.01);
   for (let i = 0; i < 60; i++) a.step(1 / 240, { tuck: true });
   assert.ok(a.omega > w * 1.25, 'lukket roterer hurtigere end strakt');
 });
