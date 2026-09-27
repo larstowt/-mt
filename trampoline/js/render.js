@@ -672,8 +672,11 @@
       for (const p of parts) { p(); o.fill(); }
       // 3) svage indre linjer på den nære side, så man kan se ben og arme i positionerne
       o.strokeStyle = color; o.globalAlpha = 0.35; o.lineWidth = lw * 0.7;
-      const nearLeg = Z(I.kneeL) >= Z(I.kneeR) ? legL : legR, nearArm = Z(I.elbowL) >= Z(I.elbowR) ? armL : armR;
-      for (const p of [nearLeg[0], nearLeg[1], ...nearArm]) { p(); o.stroke(); }
+      const nearLeg = Z(I.kneeL) >= Z(I.kneeR) ? legL : legR;
+      for (const p of [nearLeg[0], nearLeg[1]]) { p(); o.stroke(); }
+      // armene tydeligere, så man kan se dem foran kroppen (fx i lukket skrue)
+      o.globalAlpha = 0.8; o.lineWidth = lw * 0.9;
+      for (const p of [...armL, ...armR]) { p(); o.stroke(); }
       o.globalAlpha = 1;
     }
 

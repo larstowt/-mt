@@ -63,7 +63,8 @@ test('skrue virker ikke i hoftebøjet (kun strakt og lukket)', () => {
 });
 
 test('skrue i lukket position er mulig', () => {
-  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.2, shape: 'tuck', twist: 2, to: 'feet' }]);
+  // Lukket skrue er en mere åben position (lår ca. 90°), så fysik-styringen kræver lidt mere vip
+  const [r] = sequence({}, [{ q: 4, dir: 1, tilt: 0.24, shape: 'tuck', twist: 2, to: 'feet' }]);
   assert.ok(r && r.skill, JSON.stringify(r));
   assert.equal(r.skill.totalHalves, 2);
   assert.equal(r.skill.shape, 'o');
@@ -387,4 +388,19 @@ test('hvert tryk på skrue giver en halv skrue (arkade og fysik)', () => {
   for (let k = 0; k < 30; k++) b.step(dt, { pike: true, twist: true });
   for (let k = 0; k < 120; k++) b.step(dt, { twist: true });
   assert.ok(b.tracker.dpsi < 0.02, `ingen skrue (${b.tracker.dpsi})`);
+});
+
+test('lukket skrue: armene ind til brystet og lårene ca. 90°, indtil man slipper lukket', () => {
+  const a = new TR.Athlete({ power: 3 }, 'arcade');
+  const dt = 1 / 240;
+  for (let n = 0; n < 5; n++) { while (a.state !== 'bed') a.step(dt, {}); while (a.state === 'bed') a.step(dt, { push: true }); }
+  for (let k = 0; k < 6; k++) a.step(dt, { tuck: true, twist: true });
+  for (let k = 0; k < 90; k++) a.step(dt, { tuck: true });
+  assert.ok(Math.abs(a.pose.hip - 1.6) < 0.1 && Math.abs(a.pose.knee - 1.9) < 0.15, `hofte ${a.pose.hip}, knæ ${a.pose.knee}`);
+  assert.ok(a.pose.hand.every((v, i) => Math.abs(v - TR.Body.HAND.tuckTwist[i]) < 0.01), `hænder ${a.pose.hand}`);
+  // skruen er færdig, men lukket holdes stadig: armene bliver ved brystet
+  for (let k = 0; k < 240 && a.twistGoal != null; k++) a.step(dt, { tuck: true });
+  assert.equal(a.twistGoal, null);
+  for (let k = 0; k < 60; k++) a.step(dt, { tuck: true });
+  assert.ok(a.pose.hand.every((v, i) => Math.abs(v - TR.Body.HAND.tuckTwist[i]) < 0.01), `hænder ${a.pose.hand}`);
 });

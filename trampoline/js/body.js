@@ -30,6 +30,8 @@
   function shapeTarget(shape, tight) {
     const f = tight || 0;
     if (shape === 'tuck') return { hip: 2.2 + 0.05 * f, knee: 2.3 + 0.04 * f };
+    // Lukket skrue: lårene ca. 90° på overkroppen, knæene bøjet ca. 110°
+    if (shape === 'tucktwist') return { hip: 1.6, knee: 1.9 };
     if (shape === 'pike') return { hip: 1.95 + 0.04 * f, knee: 0 }; // åben hoftebøjet (ca. 70° mellem krop og ben)
     return { hip: 0, knee: 0 };
   }
@@ -41,6 +43,8 @@
     straight: [0.0, -0.64, 0.015],
     up: [0.03, 0.61, 0.03],
     twist: [0.17, -0.2, -0.13],
+    // Lukket skrue: knytnæverne samlet foran brystet under hagen, albuerne ind mod siderne
+    tuckTwist: [0.2, 0.0, -0.155],
     crash: [0.35, 0.25, 0.35],
     bed: [0.1, -0.55, 0.08],
     lieBack: [0.25, 0.3, 0.35],
