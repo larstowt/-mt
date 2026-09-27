@@ -30,7 +30,7 @@
   function shapeTarget(shape, tight) {
     const f = tight || 0;
     if (shape === 'tuck') return { hip: 2.2 + 0.05 * f, knee: 2.3 + 0.04 * f };
-    if (shape === 'pike') return { hip: 2.3 + 0.07 * f, knee: 0 };
+    if (shape === 'pike') return { hip: 1.95 + 0.04 * f, knee: 0 }; // åben hoftebøjet (ca. 70° mellem krop og ben)
     return { hip: 0, knee: 0 };
   }
 
@@ -54,6 +54,13 @@
     const ax = kx + Math.sin(kt) * LEN.shank, ay = ky - Math.cos(kt) * LEN.shank;
     const px = kx + (ax - kx) * along, py = ky + (ay - ky) * along;
     return [px + 0.02, py - LEN.torso, -0.07];
+  }
+
+  // Hoftebøjet: næsten strakte arme, hænderne hviler oven på benene lige ved knæene.
+  function pikeHandTarget(pose) {
+    const ht = pose.hip, reach = LEN.thigh + LEN.shank * 0.06, off = 0.05;
+    const px = Math.sin(ht) * reach + Math.cos(ht) * off, py = -Math.cos(ht) * reach + Math.sin(ht) * off;
+    return [px, py - LEN.torso, 0.03];
   }
 
   function armIK(sx, sy, tx, ty, out) {
@@ -99,8 +106,13 @@
     set(IDX.sh, 0, T, 0);
     set(IDX.neck, 0.01, T + LEN.neck, 0);
     const hy = T + LEN.neck + LEN.head * 0.95;
-    set(IDX.head, 0.015, hy, 0);
-    set(IDX.nose, 0.015 + 0.14, hy - 0.01, 0);
+    // Hovedet bøjes let frem mod benene i hoftebøjet (ikke i lukket og strakt)
+    const nod = 0.15 * TR.clamp((pose.hip - 1.2) / 0.75, 0, 1) * TR.clamp(1 - pose.knee / 0.8, 0, 1);
+    const nc = Math.cos(-nod), ns = Math.sin(-nod), nkx = 0.01, nky = T + LEN.neck;
+    const rot = (x, y) => [nkx + (x - nkx) * nc - (y - nky) * ns, nky + (x - nkx) * ns + (y - nky) * nc];
+    const hp = rot(0.015, hy), np = rot(0.015 + 0.14, hy - 0.01);
+    set(IDX.head, hp[0], hp[1], 0);
+    set(IDX.nose, np[0], np[1], 0);
     const hand = pose.hand;
     armIK(0, T, hand[0], T + hand[1], tmp4);
     for (const s of [-1, 1]) {
@@ -183,5 +195,5 @@
     return { y: best, idx, feet: FEET.has(idx) };
   }
 
-  TR.Body = { LEN, MASS, JOINTS, IDX, N, RADIUS, HAND, shapeTarget, legGripTarget, solve, toWorld, lowest };
+  TR.Body = { LEN, MASS, JOINTS, IDX, N, RADIUS, HAND, shapeTarget, legGripTarget, pikeHandTarget, solve, toWorld, lowest };
 })(globalThis);

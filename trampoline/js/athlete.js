@@ -9,6 +9,8 @@
 
   const STRAIGHT = B.solve({ hip: 0, knee: 0, hand: B.HAND.side });
   const I_REF = STRAIGHT.Isom;
+  // Den åbne hoftebøjede position har større inertimoment; boostet holder antallet af saltoer som før.
+  const PIKE_BOOST = 1.065;
   const TW_REF = B.solve({ hip: 0, knee: 0, hand: B.HAND.twist }).Itw;
 
   function shapeCat(pose) {
@@ -347,7 +349,7 @@
       const tg = B.shapeTarget(shape, fx.tight);
       let hand;
       if (shape === 'tuck') hand = B.legGripTarget(this.pose, 0.3);
-      else if (shape === 'pike') hand = B.legGripTarget(this.pose, 0.8);
+      else if (shape === 'pike') hand = B.pikeHandTarget(this.pose);
       else if (inp.twist || this.twistRate > 0.5) hand = B.HAND.twist;
       else if (this.control === 'arcade') hand = inp.straight ? B.HAND.straight : B.HAND.side;
       else hand = this.airT < 0.25 ? B.HAND.up : B.HAND.straight;
@@ -363,7 +365,7 @@
         this.glide = holding ? 0 : TR.approach(this.glide || 0, 1, 2.5 * dt);
         const s0 = this.spin0 || 0;
         const target = holding
-          ? s0 * Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32))
+          ? s0 * Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32)) * (shape === 'pike' ? PIKE_BOOST : 1)
           : Math.sign(s0) * Math.min(Math.abs(s0) * TR.lerp(fx.arcadeSlow, fx.arcadeGlide, this.glide),
             TR.lerp(fx.arcadeSlowMax, fx.arcadeGlideMax, this.glide));
         const faster = Math.abs(target) > Math.abs(this.omega);
