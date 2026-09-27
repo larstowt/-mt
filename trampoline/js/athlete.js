@@ -325,17 +325,23 @@
 
     stepAir(dt, inp) {
       const fx = this.fx;
-      // Skrue kan kun laves strakt eller lukket – ikke hoftebøjet.
-      if (inp.twist && inp.pike && !inp.tuck) inp = { ...inp, twist: false };
+      // Skrue kan kun laves strakt eller lukket – ikke hoftebøjet: et tryk i hoftebøjet ignoreres,
+      // og mens en skrue er i gang, kan man ikke gå i hoftebøjet (man forbliver strakt).
+      const piked = inp.pike && !inp.tuck;
+      const press = inp.twist && !this.twistPrev;
+      this.twistPrev = !!inp.twist;
+      if (piked && (inp.twist || this.twistGoal != null)) {
+        if (this.twistGoal != null) inp = { ...inp, pike: false };
+        else inp = { ...inp, twist: false };
+      }
       this.airT += dt;
       if (inp.push && !this.pushPrev) this.airPressAt = this.airT;
       const shape = inp.tuck ? 'tuck' : inp.pike ? 'pike' : 'straight';
       // Hvert tryk på skrue-knappen giver en halv skrue (lægges i kø).
-      if (inp.twist && !this.twistPrev) {
+      if (press && !piked) {
         const base = this.twistGoal != null ? this.twistGoal : Math.round(this.psi / Math.PI) * Math.PI;
         this.twistGoal = base + Math.PI;
       }
-      this.twistPrev = !!inp.twist;
       const twisting = this.twistGoal != null;
       const holding = !!(inp.tuck || inp.pike || inp.straight || inp.twist || twisting);
       const tg = B.shapeTarget(shape, fx.tight);

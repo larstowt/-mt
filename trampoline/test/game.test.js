@@ -372,4 +372,19 @@ test('hvert tryk på skrue giver en halv skrue (arkade og fysik)', () => {
   assert.ok(Math.abs(run(2, { tuck: true }) - 2) < 0.02, 'lukket skrue med tryk');
   assert.ok(run(2, { pike: true }) < 0.02, 'ingen skrue i hoftebøjet');
   assert.ok(Math.abs(run(3, {}, 'physics') - 3) < 0.02, 'fysik: 3 tryk');
+  // Skrue i kø + hoftebøjet bagefter: skruen fuldføres strakt, aldrig i hoftebøjet
+  const a = new TR.Athlete({ power: 3 }, 'arcade');
+  const dt = 1 / 240;
+  for (let n = 0; n < 5; n++) { while (a.state !== 'bed') a.step(dt, {}); while (a.state === 'bed') a.step(dt, { push: true }); }
+  for (let k = 0; k < 6; k++) a.step(dt, { twist: true });
+  let pikedWhileTwisting = false;
+  for (let k = 0; k < 120; k++) { a.step(dt, { pike: true }); if (a.twistGoal != null && a.pose.hip > 0.6) pikedWhileTwisting = true; }
+  assert.ok(!pikedWhileTwisting, 'ingen hoftebøjning under skrue');
+  assert.ok(Math.abs(a.tracker.dpsi / Math.PI - 1) < 0.02, 'skruen blev fuldført');
+  // ↓ holdt under D tæller ikke som nyt tryk, når D slippes
+  const b = new TR.Athlete({ power: 3 }, 'arcade');
+  for (let n = 0; n < 5; n++) { while (b.state !== 'bed') b.step(dt, {}); while (b.state === 'bed') b.step(dt, { push: true }); }
+  for (let k = 0; k < 30; k++) b.step(dt, { pike: true, twist: true });
+  for (let k = 0; k < 120; k++) b.step(dt, { twist: true });
+  assert.ok(b.tracker.dpsi < 0.02, `ingen skrue (${b.tracker.dpsi})`);
 });
