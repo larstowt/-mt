@@ -28,6 +28,8 @@
     }
     on(ev, fn) { (this.listeners[ev] || (this.listeners[ev] = [])).push(fn); }
     emit(ev, data) { (this.listeners[ev] || []).forEach((f) => f(data)); }
+    // Skrue lavet i dette spring plus det, der ligger i kø (radianer).
+    twistQueued() { return this.tracker.dpsi + (this.twistGoal != null ? this.twistGoal - this.psi : 0); }
     setSkills(levels) { this.levels = { ...levels }; this.fx = TR.effects(levels); }
 
     reset() {
@@ -328,14 +330,13 @@
       this.airT += dt;
       if (inp.push && !this.pushPrev) this.airPressAt = this.airT;
       const shape = inp.tuck ? 'tuck' : inp.pike ? 'pike' : 'straight';
-      const arcadeTw = this.control === 'arcade';
-      // Arkade: hvert tryk på skrue-knappen giver en halv skrue (lægges i kø).
-      if (arcadeTw && inp.twist && !this.twistPrev) {
+      // Hvert tryk på skrue-knappen giver en halv skrue (lægges i kø).
+      if (inp.twist && !this.twistPrev) {
         const base = this.twistGoal != null ? this.twistGoal : Math.round(this.psi / Math.PI) * Math.PI;
         this.twistGoal = base + Math.PI;
       }
       this.twistPrev = !!inp.twist;
-      const twisting = arcadeTw && this.twistGoal != null;
+      const twisting = this.twistGoal != null;
       const holding = !!(inp.tuck || inp.pike || inp.straight || inp.twist || twisting);
       const tg = B.shapeTarget(shape, fx.tight);
       let hand;
@@ -375,8 +376,6 @@
         const rem = this.twistGoal - this.psi;
         this.twistRate = Math.min(TR.approach(this.twistRate, tmax, 45 * dt), Math.sqrt(2 * fx.twistStop * Math.max(0, rem)) + 0.3);
         if (rem < 0.02 || this.twistRate * dt > rem) { this.psi = this.twistGoal; this.twistRate = 0; this.twistGoal = null; }
-      } else if (inp.twist && !arcadeTw) {
-        this.twistRate = TR.approach(this.twistRate, tmax, 45 * dt);
       } else if (this.twistRate > 0) {
         const next = Math.ceil(this.psi / Math.PI - 1e-6) * Math.PI;
         const rem = next - this.psi;

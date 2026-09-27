@@ -252,7 +252,7 @@
       if (p.shape !== 'straight' && rem > wS * tl + 0.4) inp[p.shape] = true;
       const sgn = Math.sign(a.L) || p.lean;
       if (!inp.tuck && !inp.pike) { if (rem < wS * tl - 0.1) inp.lean = -sgn; else if (rem > wS * tl + 0.1) inp.lean = sgn; }
-      if (p.twist && a.airT > (p.twistAt || 0.1) && t.dpsi < p.twist * Math.PI - 0.5) inp.twist = true;
+      if (p.twist && a.airT > (p.twistAt || 0.1) && !a.twistPrev && a.twistQueued() < p.twist * Math.PI - 0.5) inp.twist = true;
       return inp;
     }
   }

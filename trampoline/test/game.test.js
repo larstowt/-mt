@@ -21,7 +21,7 @@ function jump(levels, { shape = 'tuck', som = 1, lean = 0.2, dir = 1, twist = 0,
       const w = Math.abs(a.L) / 11;
       if (shape !== 'straight' && rem > w * tl + 0.35) inp[shape] = true;
       if (rem < w * tl - 0.25) inp.lean = -dir; else if (rem > w * tl + 0.25 && !inp.tuck && !inp.pike) inp.lean = dir;
-      if (twist && a.airT > twistAt && a.tracker.dpsi < twist * Math.PI - 0.4) inp.twist = true;
+      if (twist && a.airT > twistAt && !a.twistPrev && a.twistQueued() < twist * Math.PI - 0.4) inp.twist = true;
     }
     a.step(dt, inp); t += dt;
   }
@@ -165,7 +165,7 @@ function sequence(levels, steps, pump = 6) {
       const w = Math.abs(a.L) / Istr;
       if (cur.shape && rem > w * tl + 0.4) inp[cur.shape] = true;
       if (!inp[cur.shape || 'x']) { if (rem < w * tl - 0.1) inp.lean = -cur.dir; else if (rem > w * tl + 0.1) inp.lean = cur.dir; }
-      if (cur.twist && a.tracker.dpsi < cur.twist * Math.PI - 0.4 && a.airT > 0.15) inp.twist = true;
+      if (cur.twist && !a.twistPrev && a.twistQueued() < cur.twist * Math.PI - 0.4 && a.airT > 0.15) inp.twist = true;
     }
     a.step(dt, inp); t += dt;
   }
@@ -354,9 +354,9 @@ test('landing væk fra midten koster højde', () => {
   assert.ok(loss > 0.15 && loss <= 0.25, `højdetab ${loss}`);
 });
 
-test('arkade: hvert tryk på skrue giver en halv skrue', () => {
-  const run = (taps, extra = {}) => {
-    const a = new TR.Athlete({ power: 3, twist: 3 }, 'arcade');
+test('hvert tryk på skrue giver en halv skrue (arkade og fysik)', () => {
+  const run = (taps, extra = {}, ctl = 'arcade') => {
+    const a = new TR.Athlete({ power: 3, twist: 3 }, ctl);
     const dt = 1 / 240;
     for (let n = 0; n < 5; n++) { while (a.state !== 'bed') a.step(dt, {}); while (a.state === 'bed') a.step(dt, { push: true }); }
     // korte tryk (0,05 s) med 0,05 s mellemrum
@@ -371,4 +371,5 @@ test('arkade: hvert tryk på skrue giver en halv skrue', () => {
   assert.ok(Math.abs(run(3) - 3) < 0.02, `3 tryk: ${run(3)}`);
   assert.ok(Math.abs(run(2, { tuck: true }) - 2) < 0.02, 'lukket skrue med tryk');
   assert.ok(run(2, { pike: true }) < 0.02, 'ingen skrue i hoftebøjet');
+  assert.ok(Math.abs(run(3, {}, 'physics') - 3) < 0.02, 'fysik: 3 tryk');
 });
