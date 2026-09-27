@@ -15,6 +15,19 @@
     return `rgb(${r | 0},${g | 0},${b | 0})`;
   }
 
+  // Neon-spor: farver pr. bane
+  const NEON = {
+    hall: { bg: '#05030d', haze: 'rgba(120,20,160,', grid: '#ff2bd6', frame: '#29f0ff', bed: '#ff5ce1', body: '#aefcff', sign: 'TRAMPOLIN' },
+    sunset: { bg: '#0d0408', haze: 'rgba(210,70,40,', grid: '#ff7a2b', frame: '#ffd166', bed: '#ff4f7a', body: '#ffe9c7', sign: 'SOLNEDGANG' },
+    aurora: { bg: '#020a0c', haze: 'rgba(20,170,130,', grid: '#2bffb4', frame: '#4cc9f0', bed: '#7cff6b', body: '#d4fff0', sign: 'NORDLYS' },
+    final: { bg: '#0a0508', haze: 'rgba(210,30,60,', grid: '#ff2b4a', frame: '#ffd166', bed: '#ff2b4a', body: '#fff4d6', sign: 'FINALE' },
+  };
+  const STARS = [];
+  for (let i = 0; i < 200; i++) {
+    const r = (k) => { const x = Math.sin((i + k) * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+    STARS.push({ x: -14 + 28 * r(1), y: -0.5 + 24 * r(2), s: 0.6 + 1.3 * r(3), a: 0.25 + 0.6 * r(4), p: r(5) * 6 });
+  }
+
   class Renderer {
     constructor(canvas) {
       this.canvas = canvas;
@@ -30,6 +43,9 @@
       this.safeBottom = 0;
       this.record = 0;
       this.boardText = '';
+      this.rings = [];
+      this.prevDepth = 0;
+      this.off = null;
       this.resize();
       addEventListener('resize', () => this.resize());
     }
@@ -60,7 +76,7 @@
       const bottom = this.camBottom;
       const sx = (x) => W / 2 + x * ppm;
       const sy = (y) => H - bottomPad - (y - bottom) * ppm;
-      return { W, H, ppm, sx, sy, floorY: sy(BED.floor), boardText: this.boardText };
+      return { W, H, ppm, sx, sy, bottom, floorY: sy(BED.floor), boardText: this.boardText };
     }
 
     bedProfile(x, athlete) {
@@ -84,6 +100,7 @@
         const s = this.shake * 10;
         ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s);
       }
+      if (!game.save || game.save.gfx !== 'classic') return this.renderNeon(game, ctx, cam, a, dt);
       TR.Arenas.draw(game.arena, ctx, cam, this.t, a);
       this.heightMeter(ctx, cam);
       this.trampolineBack(ctx, cam, a, game.arena);
@@ -469,6 +486,251 @@
         ctx.beginPath(); ctx.arc(ex, ey, Math.max(1, r * 0.1), 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
+    }
+
+    // ================= Neon-spor =================
+    renderNeon(game, ctx, cam, a, dt) {
+      const pal = NEON[game.arena] || NEON.hall;
+      // Ringe i dugen ved landing og afsæt
+      if (a.bedDepth > 0.02 && this.prevDepth <= 0.02) this.rings.push({ x: a.x, t: 0, k: 1 });
+      if (a.bedDepth <= 0.02 && this.prevDepth > 0.02) this.rings.push({ x: a.x, t: 0, k: 0.6 });
+      this.prevDepth = a.bedDepth;
+      for (const r of this.rings) r.t += dt;
+      this.rings = this.rings.filter((r) => r.t < 0.6);
+
+      this.neonBg(ctx, cam, pal, game.arena === 'final' ? cam.boardText || pal.sign : pal.sign);
+      this.heightMeter(ctx, cam);
+      this.neonTrampBack(ctx, cam, a, pal);
+      this.neonShadow(ctx, cam, a, pal);
+      if (!game.demo) this.satsRing(ctx, cam, a);
+      this.lastAthleteX = a.x;
+      this.updateTrail(a, dt);
+      this.neonAthlete(ctx, cam, a, pal);
+      this.neonTrampFront(ctx, cam, a, pal);
+      this.updateParticles(dt);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; this.drawParticles(ctx, cam); ctx.restore();
+      this.drawFloaters(ctx, cam, dt);
+      this.drawPopups(ctx, cam, dt);
+      this.vignette(ctx, cam);
+    }
+
+    neonBg(ctx, cam, pal, sign) {
+      const { W, H, ppm } = cam;
+      ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, W, H);
+      const fy = cam.floorY, cx = cam.sx(0);
+      const g = ctx.createRadialGradient(cx, fy, 10, cx, fy, Math.max(W, H) * 0.75);
+      g.addColorStop(0, pal.haze + '0.38)'); g.addColorStop(1, pal.haze + '0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // Stjerner med parallakse
+      const par = cam.bottom * 0.55;
+      for (const st of STARS) {
+        const x = cam.sx(st.x * 0.8), y = cam.sy(st.y + 1.5 + par);
+        if (y < -2 || y > fy || x < -2 || x > W + 2) continue;
+        ctx.globalAlpha = st.a * (0.65 + 0.35 * Math.sin(this.t * 1.7 + st.p));
+        ctx.fillStyle = '#dbeaff'; ctx.fillRect(x, y, st.s, st.s);
+      }
+      ctx.globalAlpha = 1;
+      // Neonskilt i baggrunden
+      const sy = cam.sy(8.2 + cam.bottom * 0.4);
+      if (sy > -40 && sy < fy) {
+        ctx.save();
+        const fs = Math.max(18, 0.62 * ppm);
+        ctx.font = `800 ${fs}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = Math.max(1.5, fs / 22); ctx.strokeStyle = pal.grid;
+        ctx.shadowColor = pal.grid; ctx.shadowBlur = fs / 2.5; ctx.globalAlpha = 0.55;
+        ctx.strokeText(sign, cx, sy);
+        ctx.restore();
+      }
+      // Perspektivgulv
+      if (fy < H) {
+        ctx.save();
+        ctx.strokeStyle = pal.grid; ctx.lineWidth = 1; ctx.globalAlpha = 0.35;
+        ctx.beginPath();
+        for (let i = -18; i <= 18; i++) { ctx.moveTo(cx + i * 0.55 * ppm, fy); ctx.lineTo(cx + i * 1.9 * ppm, H + 2 * ppm); }
+        ctx.stroke();
+        for (let i = 1; i <= 8; i++) {
+          const y = fy + (H - fy + ppm) * Math.pow(i / 8, 1.8);
+          ctx.globalAlpha = 0.2 + 0.4 * (i / 8);
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        }
+        ctx.globalAlpha = 0.9; ctx.lineWidth = 2; ctx.shadowColor = pal.grid; ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    glowLine(ctx, color, width, blur, fn) {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.shadowColor = color; ctx.shadowBlur = blur;
+      ctx.beginPath(); fn(); ctx.stroke();
+    }
+
+    bedEdgePath(ctx, cam, a, side) {
+      const n = 48;
+      for (let i = 0; i <= n; i++) {
+        const x = -BED.half + (2 * BED.half * i) / n, y = this.edgeY(cam, a, x, side);
+        if (i === 0) ctx.moveTo(cam.sx(x), y); else ctx.lineTo(cam.sx(x), y);
+      }
+    }
+
+    neonTrampBack(ctx, cam, a, pal) {
+      const ppm = cam.ppm, fh = BED.frameHalf, fz = BED.frameWidth * DY;
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.globalAlpha = 0.5;
+      this.glowLine(ctx, pal.frame, Math.max(1, 0.02 * ppm), 6, () => {
+        for (const x of [-2.3, 0, 2.3]) { ctx.moveTo(cam.sx(x), cam.sy(fz)); ctx.lineTo(cam.sx(x), cam.sy(BED.floor + fz)); }
+      });
+      this.glowLine(ctx, pal.frame, Math.max(1.5, 0.03 * ppm), 8, () => { ctx.moveTo(cam.sx(-fh), cam.sy(fz + 0.03)); ctx.lineTo(cam.sx(fh), cam.sy(fz + 0.03)); });
+      // bageste fjedre (hver anden)
+      ctx.globalAlpha = 0.35; ctx.shadowBlur = 0; ctx.strokeStyle = pal.frame; ctx.lineWidth = 1;
+      for (let x = -BED.half + 0.1; x <= BED.half - 0.05; x += 0.38) this.spring(ctx, cam.sx(x), cam.sy(fz), cam.sx(x), this.edgeY(cam, a, x, 1), 3, 0.025 * ppm);
+      ctx.globalAlpha = 1;
+      // dugen: mørk flade med glødende bagkant
+      ctx.beginPath();
+      this.bedEdgePath(ctx, cam, a, 1);
+      for (let i = 48; i >= 0; i--) { const x = -BED.half + (2 * BED.half * i) / 48; ctx.lineTo(cam.sx(x), this.edgeY(cam, a, x, -1)); }
+      ctx.closePath();
+      ctx.fillStyle = pal.bg; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
+      ctx.save(); ctx.clip();
+      ctx.strokeStyle = pal.bed; ctx.globalAlpha = 0.12; ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = -BED.half + 0.27; x < BED.half; x += 0.27) { ctx.moveTo(cam.sx(x), this.edgeY(cam, a, x, 1)); ctx.lineTo(cam.sx(x), this.edgeY(cam, a, x, -1)); }
+      ctx.stroke();
+      ctx.globalAlpha = 0.6; ctx.lineWidth = Math.max(1, 0.025 * ppm);
+      const my = (this.edgeY(cam, a, 0, 1) + this.edgeY(cam, a, 0, -1)) / 2;
+      ctx.beginPath(); ctx.moveTo(cam.sx(-0.3), my); ctx.lineTo(cam.sx(0.3), my); ctx.stroke();
+      ctx.restore();
+      ctx.globalAlpha = 0.8;
+      this.glowLine(ctx, pal.bed, Math.max(1.5, 0.022 * ppm), 10, () => this.bedEdgePath(ctx, cam, a, 1));
+      // endefjedre og endepuder
+      ctx.globalAlpha = 0.5; ctx.shadowBlur = 0; ctx.strokeStyle = pal.frame; ctx.lineWidth = 1;
+      for (const sd of [-1, 1]) for (let k = -2; k <= 2; k += 2) { const yy = cam.sy(k * 0.07); this.spring(ctx, cam.sx(sd * BED.half), yy, cam.sx(sd * (fh - 0.1)), yy, 4, 0.02 * ppm); }
+      ctx.globalAlpha = 0.9;
+      for (const sd of [-1, 1]) {
+        this.glowLine(ctx, pal.frame, Math.max(1.5, 0.025 * ppm), 8, () => {
+          const x0 = cam.sx(sd * (fh - 0.12)), x1 = cam.sx(sd * fh);
+          ctx.rect(Math.min(x0, x1), cam.sy(fz + 0.07), Math.abs(x1 - x0), cam.sy(-fz - 0.05) - cam.sy(fz + 0.07));
+        });
+      }
+      ctx.restore();
+    }
+
+    neonTrampFront(ctx, cam, a, pal) {
+      const ppm = cam.ppm, fh = BED.frameHalf, fz = -BED.frameWidth * DY;
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      // dugens underside skjuler fødderne, når dugen trykkes ned
+      ctx.beginPath();
+      this.bedEdgePath(ctx, cam, a, -1);
+      ctx.lineTo(cam.sx(BED.half), cam.sy(fz) + 2); ctx.lineTo(cam.sx(-BED.half), cam.sy(fz) + 2);
+      ctx.closePath(); ctx.fillStyle = pal.bg; ctx.fill();
+      this.glowLine(ctx, pal.bed, Math.max(2, 0.035 * ppm), 16, () => this.bedEdgePath(ctx, cam, a, -1));
+      ctx.globalAlpha = 0.45; ctx.shadowBlur = 0; ctx.strokeStyle = pal.frame; ctx.lineWidth = 1;
+      for (let x = -BED.half + 0.1; x <= BED.half - 0.05; x += 0.38) this.spring(ctx, cam.sx(x), this.edgeY(cam, a, x, -1), cam.sx(x), cam.sy(fz), 3, 0.03 * ppm);
+      ctx.globalAlpha = 0.85;
+      this.glowLine(ctx, pal.frame, Math.max(1.5, 0.025 * ppm), 8, () => {
+        for (const x of [-2.3, 2.3]) { ctx.moveTo(cam.sx(x), cam.sy(fz)); ctx.lineTo(cam.sx(x + Math.sign(x) * 0.25), cam.sy(BED.floor + fz * 0.3)); }
+        ctx.moveTo(cam.sx(-2.3), cam.sy(BED.floor + 0.37)); ctx.lineTo(cam.sx(2.3), cam.sy(BED.floor + 0.37));
+      });
+      ctx.globalAlpha = 1;
+      const top = cam.sy(fz + 0.02), h = 0.16 * ppm;
+      this.roundRect(ctx, cam.sx(-fh), top, cam.sx(fh) - cam.sx(-fh), h, 0.05 * ppm);
+      ctx.fillStyle = pal.bg; ctx.fill();
+      ctx.strokeStyle = pal.frame; ctx.lineWidth = Math.max(1.5, 0.028 * ppm); ctx.shadowColor = pal.frame; ctx.shadowBlur = 12; ctx.stroke();
+      // ringe
+      ctx.globalCompositeOperation = 'lighter'; ctx.shadowColor = pal.bed; ctx.shadowBlur = 10; ctx.strokeStyle = pal.bed; ctx.lineWidth = 2;
+      for (const r of this.rings) {
+        const k = r.t / 0.6, rx = (0.35 + k * 2.2) * ppm;
+        ctx.globalAlpha = (1 - k) * r.k;
+        ctx.beginPath(); ctx.ellipse(cam.sx(r.x), cam.sy(-0.05), rx, rx * 0.22, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    neonShadow(ctx, cam, a, pal) {
+      if (Math.abs(a.x) > BED.half) return;
+      const h = Math.max(0, a.y - 1), k = 1 / (1 + h * 0.4);
+      const x = cam.sx(a.x), y = cam.sy(-this.bedProfile(a.x, a) * 0.85), r = 0.6 * cam.ppm * (0.6 + 0.4 * k);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, pal.haze + (0.55 * k).toFixed(3) + ')'); g.addColorStop(1, pal.haze + '0)');
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.25, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+
+    // Springeren som ét glødende omrids. Spor fra tidligere billeder tegnes først og dækkes af de nyere.
+    neonAthlete(ctx, cam, a, pal) {
+      const frames = this.trail.concat([a.world]);
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const W of frames) for (let i = 0; i < W.length; i += 3) {
+        const x = cam.sx(W[i]), y = cam.sy(W[i + 1]);
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+      const m = 0.4 * cam.ppm + 12;
+      x0 = Math.floor(x0 - m); y0 = Math.floor(y0 - m); x1 = Math.ceil(x1 + m); y1 = Math.ceil(y1 + m);
+      const bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0), dpr = this.dpr;
+      if (!this.off) this.off = document.createElement('canvas');
+      const oc = this.off, pw = Math.ceil(bw * dpr), ph = Math.ceil(bh * dpr);
+      if (oc.width < pw || oc.height < ph) { oc.width = Math.max(oc.width, pw); oc.height = Math.max(oc.height, ph); }
+      const o = oc.getContext('2d');
+      o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, pw, ph);
+      o.setTransform(dpr, 0, 0, dpr, -x0 * dpr, -y0 * dpr);
+      const lw = Math.max(1.2, 0.02 * cam.ppm), n = frames.length;
+      frames.forEach((W, k) => {
+        const main = k === n - 1;
+        const q = (k + 1) / n;
+        this.neonSil(o, cam, W, main ? pal.body : pal.bed, lw, main ? 1 : 0.18 + 0.35 * q, main);
+      });
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      if (typeof ctx.filter === 'string') {
+        ctx.filter = `blur(${Math.max(2, 0.035 * cam.ppm).toFixed(1)}px)`;
+        ctx.drawImage(oc, 0, 0, pw, ph, x0, y0, pw / dpr, ph / dpr);
+        ctx.filter = 'none';
+      }
+      ctx.drawImage(oc, 0, 0, pw, ph, x0, y0, pw / dpr, ph / dpr);
+      ctx.restore();
+    }
+
+    neonSil(o, cam, W, color, lw, alpha, main) {
+      const ppm = cam.ppm;
+      const X = (i) => cam.sx(W[i * 3]), Y = (i) => cam.sy(W[i * 3 + 1]);
+      const segs = [
+        [I.hipL, I.kneeL, 0.17], [I.kneeL, I.ankleL, 0.12], [I.ankleL, I.toeL, 0.075],
+        [I.hipR, I.kneeR, 0.17], [I.kneeR, I.ankleR, 0.12], [I.ankleR, I.toeR, 0.075],
+        [I.shL, I.elbowL, 0.095], [I.elbowL, I.handL, 0.08], [I.shR, I.elbowR, 0.095], [I.elbowR, I.handR, 0.08],
+        [I.sh, I.neck, 0.08],
+      ];
+      // torso som i den klassiske tegning
+      const hx = X(I.hip), hy = Y(I.hip), sx = X(I.sh), sy = Y(I.sh);
+      const sep = Math.abs(X(I.shL) - X(I.shR)) + Math.abs(Y(I.shL) - Y(I.shR));
+      const hsep = Math.abs(X(I.hipL) - X(I.hipR)) + Math.abs(Y(I.hipL) - Y(I.hipR));
+      const wS = Math.max(0.26 * ppm, sep + 0.1 * ppm) / 2, wH = Math.max(0.24 * ppm, hsep + 0.12 * ppm) / 2;
+      const dx = sx - hx, dy = sy - hy, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+      const torso = () => { o.beginPath(); o.moveTo(hx + nx * wH, hy + ny * wH); o.lineTo(sx + nx * wS, sy + ny * wS); o.lineTo(sx - nx * wS, sy - ny * wS); o.lineTo(hx - nx * wH, hy - ny * wH); o.closePath(); };
+      const r = B.LEN.head * ppm, hdx = X(I.head), hdy = Y(I.head);
+      o.lineCap = 'round'; o.lineJoin = 'round';
+      // 1) tykt omrids i farven
+      o.globalAlpha = alpha; o.strokeStyle = color; o.fillStyle = color;
+      for (const [p, q, w] of segs) { o.lineWidth = w * ppm + 2 * lw; o.beginPath(); o.moveTo(X(p), Y(p)); o.lineTo(X(q), Y(q)); o.stroke(); }
+      o.lineWidth = 0.1 * ppm + 2 * lw; torso(); o.stroke(); o.fill();
+      o.beginPath(); o.arc(hdx, hdy, r + lw, 0, Math.PI * 2); o.fill();
+      // 2) udfyld i sort, så kun den ydre kant bliver tilbage
+      o.globalAlpha = 1; o.strokeStyle = '#000'; o.fillStyle = '#000';
+      for (const [p, q, w] of segs) { o.lineWidth = w * ppm; o.beginPath(); o.moveTo(X(p), Y(p)); o.lineTo(X(q), Y(q)); o.stroke(); }
+      o.lineWidth = 0.1 * ppm; torso(); o.stroke(); o.fill();
+      o.beginPath(); o.arc(hdx, hdy, r, 0, Math.PI * 2); o.fill();
+      if (!main) return;
+      // 3) svage indre linjer og ansigtet, så man kan se skruen
+      o.globalAlpha = 0.35; o.strokeStyle = color; o.lineWidth = Math.max(1, lw * 0.6);
+      for (const [p, q] of [[I.hipL, I.kneeL], [I.kneeL, I.ankleL], [I.hipR, I.kneeR], [I.kneeR, I.ankleR], [I.shL, I.handL], [I.shR, I.handR], [I.hip, I.sh]]) {
+        o.beginPath(); o.moveTo(X(p), Y(p)); o.lineTo(X(q), Y(q)); o.stroke();
+      }
+      const nz = W[I.nose * 3 + 2] - W[I.head * 3 + 2];
+      if (nz > -0.09) {
+        o.globalAlpha = 0.9; o.fillStyle = color;
+        const ex = hdx + (X(I.nose) - hdx) * 0.6, ey = hdy + (Y(I.nose) - hdy) * 0.6 - r * 0.1;
+        o.beginPath(); o.arc(ex, ey, Math.max(1.2, r * 0.14), 0, Math.PI * 2); o.fill();
+      }
+      o.globalAlpha = 1;
     }
 
     updateTrail(a, dt) {

@@ -89,6 +89,7 @@
     look: { suit: '#e63946', accent: '#ffd166', skin: '#f1c27d', hair: '#3b2a20' },
     sound: true,
     control: 'arcade',
+    gfx: 'neon', // 'neon' (Neon-spor) eller 'classic'
     freeMax: false, // fri leg med alle færdigheder på max
     arena: 'hall',
     seenHelp: false,

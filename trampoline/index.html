@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css?v=2026.09.27-10">
+  <link rel="stylesheet" href="style.css?v=2026.09.27-11">
 </head>
 <body>
   <div id="app">
@@ -86,7 +86,7 @@
           <button class="pill" id="soundBtn">Lyd: til</button>
           <button class="pill" id="fullBtn" hidden>Fuld skærm</button>
         </div>
-        <p class="version muted small">Version 2026.09.27-10</p>
+        <p class="version muted small">Version 2026.09.27-11</p>
         <div class="arena-pick">
           <h3>Bane</h3>
           <div id="arenaList" class="arena-list"></div>
@@ -123,6 +123,12 @@
           <div class="seg" id="controlSeg" role="radiogroup" aria-label="Styring">
             <button class="seg-btn" data-control="arcade" role="radio">Arkade <small>som Walaber: lad rotation op med pilene, hold en position for at rotere, slip for at bremse</small></button>
             <button class="seg-btn" data-control="physics" role="radio">Realistisk <small>fysik: rotationen tages med fra dugen</small></button>
+          </div>
+        </div>
+        <div class="field">Grafik
+          <div class="seg" id="gfxSeg" role="radiogroup" aria-label="Grafik">
+            <button class="seg-btn" data-gfx="neon" role="radio">Neon-spor <small>glødende silhuet med spor gennem saltoen</small></button>
+            <button class="seg-btn" data-gfx="classic" role="radio">Klassisk <small>farvet springer i hallen – bruger dine dragtfarver</small></button>
           </div>
         </div>
         <div class="stats" id="statsBox"></div>
@@ -209,19 +215,19 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/core.js?v=2026.09.27-10"></script>
-  <script src="js/body.js?v=2026.09.27-10"></script>
-  <script src="js/tricks.js?v=2026.09.27-10"></script>
-  <script src="js/athlete.js?v=2026.09.27-10"></script>
-  <script src="js/scoring.js?v=2026.09.27-10"></script>
-  <script src="js/challenges.js?v=2026.09.27-10"></script>
-  <script src="js/share.js?v=2026.09.27-10"></script>
-  <script src="js/input.js?v=2026.09.27-10"></script>
-  <script src="js/audio.js?v=2026.09.27-10"></script>
-  <script src="js/arenas.js?v=2026.09.27-10"></script>
-  <script src="js/render.js?v=2026.09.27-10"></script>
-  <script src="js/game.js?v=2026.09.27-10"></script>
-  <script src="js/ui.js?v=2026.09.27-10"></script>
-  <script src="js/main.js?v=2026.09.27-10"></script>
+  <script src="js/core.js?v=2026.09.27-11"></script>
+  <script src="js/body.js?v=2026.09.27-11"></script>
+  <script src="js/tricks.js?v=2026.09.27-11"></script>
+  <script src="js/athlete.js?v=2026.09.27-11"></script>
+  <script src="js/scoring.js?v=2026.09.27-11"></script>
+  <script src="js/challenges.js?v=2026.09.27-11"></script>
+  <script src="js/share.js?v=2026.09.27-11"></script>
+  <script src="js/input.js?v=2026.09.27-11"></script>
+  <script src="js/audio.js?v=2026.09.27-11"></script>
+  <script src="js/arenas.js?v=2026.09.27-11"></script>
+  <script src="js/render.js?v=2026.09.27-11"></script>
+  <script src="js/game.js?v=2026.09.27-11"></script>
+  <script src="js/ui.js?v=2026.09.27-11"></script>
+  <script src="js/main.js?v=2026.09.27-11"></script>
 </body>
 </html>

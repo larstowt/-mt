@@ -219,6 +219,13 @@
         b.setAttribute('aria-checked', on ? 'true' : 'false');
         b.onclick = () => { s.control = b.dataset.control; TR.persist(s); this.renderPlayer(); };
       });
+      const gfx = s.gfx === 'classic' ? 'classic' : 'neon';
+      document.querySelectorAll('[data-gfx]').forEach((b) => {
+        const on = b.dataset.gfx === gfx;
+        b.classList.toggle('sel', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+        b.onclick = () => { s.gfx = b.dataset.gfx; TR.persist(s); this.renderPlayer(); };
+      });
       for (const key of Object.keys(SWATCH)) {
         const box = $(key + 'Sw');
         const cur = key === 'legs' ? s.look.legs || '#f3f4f8' : s.look[key];
