@@ -17,7 +17,7 @@ Et trampolinspil til browseren, der også kører på iPhone og Android. Spillet 
 | Strakt (hold) | F | STRAKT |
 | Lukket (tuck) | S | LUKKET |
 | Hoftebøjet (pike) | D | HOFTE |
-| Skrue (strakt, eller lukket med ↓+S) | ↓ | SKRUE |
+| Skrue – ½ skrue pr. tryk (strakt, eller lukket med S + ↓) | ↓ | SKRUE |
 | Stop på dugen | ↑ | STOP |
 | Pause | Esc / P | ❚❚ |
 
@@ -25,7 +25,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 
 ## Styring af rotation
 
-- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at lade rotation op – også mens du er i luften. Slip for at bruge ladningen: i næste afsæt, eller med det samme, hvis du holdt pilen gennem afsættet. I luften holder du en position for at rotere: strakt (F), hoftebøjet (D), lukket (S) eller skrue (↓; strakt eller lukket med ↓+S). Slip alle knapper (åbn), så bremser rotationen brat (ca. 0,1 s) ned til højst ca. 125°/s og glider derefter ned mod ca. 55°/s frem mod landing – uanset niveau – målt fra en video af Walaber's Trampoline.
+- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at lade rotation op – også mens du er i luften. Slip for at bruge ladningen: i næste afsæt, eller med det samme, hvis du holdt pilen gennem afsættet. I luften holder du en position for at rotere: strakt (F), hoftebøjet (D), lukket (S) eller skrue (↓ – hvert tryk giver ½ skrue; strakt eller lukket med S + ↓). Slip alle knapper (åbn), så bremser rotationen brat (ca. 0,1 s) ned til højst ca. 125°/s og glider derefter ned mod ca. 55°/s frem mod landing – uanset niveau – målt fra en video af Walaber's Trampoline.
 - **Realistisk:** rotationen tages med fra dugen ved at vippe, og impulsmomentet er bevaret i luften. Vælges under *Spiller*.
 
 ## Hvad er nyt i forhold til originalen

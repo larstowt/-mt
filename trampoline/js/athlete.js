@@ -37,7 +37,7 @@
       this.x = 0; this.vx = 0;
       this.feetY = -GRAV / BED.K; this.vy = 0;
       this.phi = 0; this.psi = 0; this.psiTarget = 0;
-      this.twistRate = 0; this.L = 0; this.omega = 0;
+      this.twistRate = 0; this.twistGoal = null; this.L = 0; this.omega = 0;
       this.pose = { hip: 0.1, knee: 0.15, hand: B.HAND.side.slice() };
       this.yCorr = 0; this.crashT = 0; this.airT = 0;
       this.tracker = new TR.TrickTracker();
@@ -314,6 +314,7 @@
       this.state = 'air';
       this.airT = 0;
       this.airPressAt = null;
+      this.twistGoal = null; this.twistPrev = false; // holdes ↓ gennem afsættet, tæller det som et tryk
       this.apexSent = false;
       this.tracker.start(this.phi, this.psi, this.x, this.contact, tilt);
       this.prevTorso = this.torsoAngle(B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW));
@@ -327,7 +328,15 @@
       this.airT += dt;
       if (inp.push && !this.pushPrev) this.airPressAt = this.airT;
       const shape = inp.tuck ? 'tuck' : inp.pike ? 'pike' : 'straight';
-      const holding = !!(inp.tuck || inp.pike || inp.straight || inp.twist);
+      const arcadeTw = this.control === 'arcade';
+      // Arkade: hvert tryk på skrue-knappen giver en halv skrue (lægges i kø).
+      if (arcadeTw && inp.twist && !this.twistPrev) {
+        const base = this.twistGoal != null ? this.twistGoal : Math.round(this.psi / Math.PI) * Math.PI;
+        this.twistGoal = base + Math.PI;
+      }
+      this.twistPrev = !!inp.twist;
+      const twisting = arcadeTw && this.twistGoal != null;
+      const holding = !!(inp.tuck || inp.pike || inp.straight || inp.twist || twisting);
       const tg = B.shapeTarget(shape, fx.tight);
       let hand;
       if (shape === 'tuck') hand = B.legGripTarget(this.pose, 0.3);
@@ -362,7 +371,11 @@
 
       // Skrue: kan startes i alle positioner, men går langsommere jo mere samlet kroppen er.
       const tmax = fx.twistRate * Math.pow(TW_REF / this.body.Itw, 0.6);
-      if (inp.twist) {
+      if (twisting) {
+        const rem = this.twistGoal - this.psi;
+        this.twistRate = Math.min(TR.approach(this.twistRate, tmax, 45 * dt), Math.sqrt(2 * fx.twistStop * Math.max(0, rem)) + 0.3);
+        if (rem < 0.02 || this.twistRate * dt > rem) { this.psi = this.twistGoal; this.twistRate = 0; this.twistGoal = null; }
+      } else if (inp.twist && !arcadeTw) {
         this.twistRate = TR.approach(this.twistRate, tmax, 45 * dt);
       } else if (this.twistRate > 0) {
         const next = Math.ceil(this.psi / Math.PI - 1e-6) * Math.PI;
@@ -436,7 +449,7 @@
       const halfTurns = Math.round(this.psi / Math.PI);
       this.psiTarget = (((halfTurns % 2) + 2) % 2) * Math.PI;
       this.psi = this.psiTarget + (this.psi - halfTurns * Math.PI);
-      this.twistRate = 0; this.omega = 0; this.L = 0; this.vx = 0;
+      this.twistRate = 0; this.twistGoal = null; this.omega = 0; this.L = 0; this.vx = 0;
       this.body = B.solve(this.pose, this.body);
       this.y = this.feetY + this.contactOffset();
       this.yCorr += oldY - this.y;
@@ -470,7 +483,7 @@
       this.crashOnBed = onBed;
       this.phi = TR.wrapPi(this.phi);
       this.crashPhi = this.phi >= 0 ? Math.PI / 2 : -Math.PI / 2;
-      this.twistRate = 0;
+      this.twistRate = 0; this.twistGoal = null;
       this.vx *= 0.5;
       this.tracker.abort();
       this.emit('crash', { reason, onBed, x: this.x, speed: -this.vy });

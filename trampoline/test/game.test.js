@@ -353,3 +353,22 @@ test('landing væk fra midten koster højde', () => {
   for (let i = 0; i < 240 * 3 && loss == null; i++) a.step(1 / 240, { push: true });
   assert.ok(loss > 0.15 && loss <= 0.25, `højdetab ${loss}`);
 });
+
+test('arkade: hvert tryk på skrue giver en halv skrue', () => {
+  const run = (taps, extra = {}) => {
+    const a = new TR.Athlete({ power: 3, twist: 3 }, 'arcade');
+    const dt = 1 / 240;
+    for (let n = 0; n < 5; n++) { while (a.state !== 'bed') a.step(dt, {}); while (a.state === 'bed') a.step(dt, { push: true }); }
+    // korte tryk (0,05 s) med 0,05 s mellemrum
+    for (let i = 0; i < taps; i++) {
+      for (let k = 0; k < 12; k++) a.step(dt, { twist: true, ...extra });
+      for (let k = 0; k < 12; k++) a.step(dt, { ...extra });
+    }
+    for (let k = 0; k < 240 && a.state === 'air'; k++) a.step(dt, { ...extra });
+    return a.tracker.dpsi / Math.PI;
+  };
+  assert.ok(Math.abs(run(1) - 1) < 0.02, `1 tryk: ${run(1)}`);
+  assert.ok(Math.abs(run(3) - 3) < 0.02, `3 tryk: ${run(3)}`);
+  assert.ok(Math.abs(run(2, { tuck: true }) - 2) < 0.02, 'lukket skrue med tryk');
+  assert.ok(run(2, { pike: true }) < 0.02, 'ingen skrue i hoftebøjet');
+});

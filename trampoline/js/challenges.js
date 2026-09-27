@@ -38,8 +38,8 @@
       id: 'sunset', name: 'Solnedgang', need: 7, tagline: 'Spring ind i aftenrøden.',
       challenges: [
         { id: 's1', title: 'Højt oppe', desc: 'Nå 4 meters højde – som en eliteudøver.', type: 'height', target: 4.0, hint: 'Kraft-færdigheden giver højere spring.' },
-        { id: 's2', title: 'Hel skrue', desc: 'Salto baglæns med hel skrue.', type: 'skill', match: { dir: 'B', q: 4, halves: 2 }, hint: 'Hold ↓ lidt længere for en hel skrue.' },
-        { id: 's3', title: 'Skru i lukket', desc: 'Land en hel skrue i LUKKET position.', type: 'skill', match: { dir: 'B', q: 4, halves: 2, shape: 'o' }, hint: 'Hold S og ↓ samtidig. Lukket skruer langsommere.' },
+        { id: 's2', title: 'Hel skrue', desc: 'Salto baglæns med hel skrue.', type: 'skill', match: { dir: 'B', q: 4, halves: 2 }, hint: 'Tryk to gange på ↓ for en hel skrue.' },
+        { id: 's3', title: 'Skru i lukket', desc: 'Land en hel skrue i LUKKET position.', type: 'skill', match: { dir: 'B', q: 4, halves: 2, shape: 'o' }, hint: 'Hold S, og tryk to gange på ↓. Lukket skruer langsommere.' },
         { id: 's4', title: 'Tre positioner', desc: 'Land salto baglæns lukket, hoftebøjet og strakt i træk.', type: 'sequence',
           list: [{ dir: 'B', q: 4, halves: 0, shape: 'o' }, { dir: 'B', q: 4, halves: 0, shape: '<' }, { dir: 'B', q: 4, halves: 0, shape: '/' }], hint: 'Strakte hop imellem er tilladt.' },
         { id: 's5', title: 'Rudi', desc: 'Salto forlæns med 1½ skrue.', type: 'skill', match: { dir: 'F', q: 4, halves: 3 }, hint: 'Strakt skruer hurtigst.' },
