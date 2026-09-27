@@ -99,7 +99,7 @@
   // Baner, der kan vælges på forsiden (begge med Neon-grafik)
   TR.STAGES = [
     { id: 'neon', name: 'Neon', tagline: 'Glødende neon under stjernerne.' },
-    { id: 'hall', name: 'Klubhallen', tagline: 'Neon-springer i klubhallen.' },
+    { id: 'hall', name: 'Klubhallen', tagline: 'Herrespringer i klubhallen.' },
   ];
   TR.stageOk = (id) => TR.STAGES.some((s) => s.id === id);
   TR.Challenges = { matches, starsFor, starsText, byId, starsFromE, MAX_STARS };

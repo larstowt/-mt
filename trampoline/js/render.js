@@ -7,6 +7,13 @@
   const I = B.IDX;
   const WORLD_BOTTOM = -1.75;
 
+  function shade(hex, f) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    if (f < 1) { r *= f; g *= f; b *= f; } else { const k = f - 1; r += (255 - r) * k; g += (255 - g) * k; b += (255 - b) * k; }
+    return `rgb(${r | 0},${g | 0},${b | 0})`;
+  }
+
   // Neon-farver (samme på begge baner)
   const PAL = { bg: '#05030d', haze: 'rgba(120,20,160,', grid: '#ff2bd6', frame: '#29f0ff', bed: '#ff5ce1', body: '#aefcff' };
   const STARS = [];
@@ -180,11 +187,8 @@
       this.prevDepth = a.bedDepth;
       for (const r of this.rings) r.t += dt;
       this.rings = this.rings.filter((r) => r.t < 0.6);
-      if (game.arena === 'hall') {
-        // Klubhallen: hallens baggrund, dæmpet så neon-springeren og trampolinen står tydeligt
-        TR.Arenas.draw('hall', ctx, cam, this.t, a);
-        ctx.fillStyle = 'rgba(6,4,16,0.55)'; ctx.fillRect(0, 0, cam.W, cam.H);
-      } else this.neonBg(ctx, cam, pal);
+      if (game.arena === 'hall') return this.renderHall(game, ctx, cam, a, dt);
+      this.neonBg(ctx, cam, pal);
       this.heightMeter(ctx, cam);
       this.neonTramp(ctx, cam, a, pal);
       if (!game.demo) this.satsRing(ctx, cam, a);
@@ -319,20 +323,18 @@
       o.closePath();
     }
 
-    neonSil(o, cam, W, color, lw, main) {
+    // Kroppens former (fælles for Neon og Klubhallen): tilspidsede lemmer, afrundet overkrop og hoved.
+    bodyGeo(o, cam, W) {
       const ppm = cam.ppm;
       const X = (i) => cam.sx(W[i * 3]), Y = (i) => cam.sy(W[i * 3 + 1]), Z = (i) => W[i * 3 + 2];
-      const cap = (p, q, wa, wb) => () => this.capPath(o, X(p), Y(p), X(q), Y(q), wa * ppm, wb * ppm);
-      const legParts = (h, k, an, t) => [cap(h, k, 0.085, 0.056), cap(k, an, 0.056, 0.036), cap(an, t, 0.034, 0.022)];
-      const armParts = (s, e, h) => [cap(s, e, 0.047, 0.036), cap(e, h, 0.036, 0.028)];
-      const legL = legParts(I.hipL, I.kneeL, I.ankleL, I.toeL), legR = legParts(I.hipR, I.kneeR, I.ankleR, I.toeR);
-      const armL = armParts(I.shL, I.elbowL, I.handL), armR = armParts(I.shR, I.elbowR, I.handR);
+      const cap = (p, q, wa, wb) => ({ a: [X(p), Y(p)], b: [X(q), Y(q)], w: Math.max(wa, wb) * ppm, path: () => this.capPath(o, X(p), Y(p), X(q), Y(q), wa * ppm, wb * ppm) });
+      const leg = (h, k, an, t) => [cap(h, k, 0.085, 0.056), cap(k, an, 0.056, 0.036), cap(an, t, 0.034, 0.022)];
+      const arm = (s, e, h) => [cap(s, e, 0.047, 0.036), cap(e, h, 0.036, 0.028)];
       // Overkroppen: afrundet form. Fra siden er den smal, forfra bred (følger skruen).
       const hx = X(I.hip), hy = Y(I.hip), sx = X(I.sh), sy = Y(I.sh);
       const dx = sx - hx, dy = sy - hy, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
       const full = Math.hypot(W[I.shL * 3] - W[I.shR * 3], W[I.shL * 3 + 1] - W[I.shR * 3 + 1], W[I.shL * 3 + 2] - W[I.shR * 3 + 2]) || 1;
-      const proj = Math.hypot(X(I.shL) - X(I.shR), Y(I.shL) - Y(I.shR)) / ppm;
-      const fr = Math.min(1, Math.max(0, proj / full));
+      const fr = Math.min(1, Math.max(0, Math.hypot(X(I.shL) - X(I.shR), Y(I.shL) - Y(I.shR)) / ppm / full));
       // stationer langs kroppen (andel af hofte→skulder) med halv bredde fra siden og forfra (m)
       const ST = [[-0.1, 0.07, 0.1], [0.0, 0.095, 0.16], [0.38, 0.085, 0.135], [0.7, 0.108, 0.17], [0.95, 0.088, 0.19], [1.08, 0.045, 0.12]];
       const L = [], R = [];
@@ -341,30 +343,162 @@
         L.push([cx + nx * w, cy + ny * w]); R.push([cx - nx * w, cy - ny * w]);
       }
       const pts = L.concat(R.reverse());
-      const torso = () => {
-        const n = pts.length, m0 = [(pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2];
-        o.beginPath(); o.moveTo(m0[0], m0[1]);
+      const torso = { a: [hx, hy], b: [sx, sy], w: 0.11 * ppm, path: () => {
+        const n = pts.length;
+        o.beginPath(); o.moveTo((pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2);
         for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; o.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2); }
         o.closePath();
+      } };
+      const r = B.LEN.head * ppm, hd = [X(I.head), Y(I.head)];
+      const head = { a: hd, b: hd, w: r, r, path: () => { o.beginPath(); o.arc(hd[0], hd[1], r, 0, Math.PI * 2); } };
+      return {
+        legL: leg(I.hipL, I.kneeL, I.ankleL, I.toeL), legR: leg(I.hipR, I.kneeR, I.ankleR, I.toeR),
+        armL: arm(I.shL, I.elbowL, I.handL), armR: arm(I.shR, I.elbowR, I.handR),
+        torso, neck: cap(I.sh, I.head, 0.045, 0.045), head,
+        leftNear: Z(I.hipL) > Z(I.hipR), nearLegL: Z(I.kneeL) >= Z(I.kneeR),
+        nose: [X(I.nose), Y(I.nose)], nz: W[I.nose * 3 + 2] - W[I.head * 3 + 2], u: [ux, uy],
       };
-      const r = B.LEN.head * ppm, hdx = X(I.head), hdy = Y(I.head);
-      const head = () => { o.beginPath(); o.arc(hdx, hdy, r, 0, Math.PI * 2); };
-      const neck = cap(I.sh, I.head, 0.045, 0.045);
-      const parts = [...armL, ...armR, ...legL, ...legR, torso, neck, head];
+    }
+
+    neonSil(o, cam, W, color, lw) {
+      const g = this.bodyGeo(o, cam, W);
+      const parts = [...g.armL, ...g.armR, ...g.legL, ...g.legR, g.torso, g.neck, g.head];
       o.lineJoin = 'round'; o.lineCap = 'round';
       // 1) alle dele med tyk streg, 2) alle dele udfyldt i sort ovenpå → kun det ydre omrids bliver tilbage
       o.strokeStyle = color; o.lineWidth = lw * 2;
-      for (const p of parts) { p(); o.stroke(); }
+      for (const p of parts) { p.path(); o.stroke(); }
       o.fillStyle = '#000';
-      for (const p of parts) { p(); o.fill(); }
+      for (const p of parts) { p.path(); o.fill(); }
       // 3) svage indre linjer på den nære side, så man kan se ben og arme i positionerne
       o.strokeStyle = color; o.globalAlpha = 0.35; o.lineWidth = lw * 0.7;
-      const nearLeg = Z(I.kneeL) >= Z(I.kneeR) ? legL : legR;
-      for (const p of [nearLeg[0], nearLeg[1]]) { p(); o.stroke(); }
+      const nearLeg = g.nearLegL ? g.legL : g.legR;
+      for (const p of [nearLeg[0], nearLeg[1]]) { p.path(); o.stroke(); }
       // armene tydeligere, så man kan se dem foran kroppen (fx i lukket skrue)
       o.globalAlpha = 0.8; o.lineWidth = lw * 0.9;
-      for (const p of [...armL, ...armR]) { p(); o.stroke(); }
+      for (const p of [...g.armL, ...g.armR]) { p.path(); o.stroke(); }
       o.globalAlpha = 1;
+    }
+
+    // ================= Klubhallen =================
+    // Samme trampolin og springer som på Neon-banen, men i rigtige farver med lys og skygge.
+    renderHall(game, ctx, cam, a, dt) {
+      TR.Arenas.draw('hall', ctx, cam, this.t, a);
+      this.heightMeter(ctx, cam);
+      // skygge på gulvet
+      const k = 1 / (1 + Math.max(0, a.y) * 0.4);
+      ctx.fillStyle = `rgba(0,0,0,${(0.3 * k).toFixed(3)})`;
+      ctx.beginPath(); ctx.ellipse(cam.sx(a.x), cam.floorY, 0.8 * cam.ppm * (0.6 + 0.4 * k), 0.07 * cam.ppm, 0, 0, Math.PI * 2); ctx.fill();
+      this.hallTramp(ctx, cam, a);
+      if (!game.demo) this.satsRing(ctx, cam, a);
+      this.lastAthleteX = a.x;
+      this.hallAthlete(ctx, cam, a.world);
+      this.updateParticles(dt);
+      this.drawParticles(ctx, cam);
+      this.drawFloaters(ctx, cam, dt);
+      this.drawPopups(ctx, cam, dt);
+    }
+
+    hallTramp(ctx, cam, a) {
+      const ppm = cam.ppm, F = BED.floor, P = (x, y) => [cam.sx(x), cam.sy(y)];
+      ctx.save(); ctx.lineCap = 'round';
+      // stålben og tværstivere
+      for (const sd of [-1, 1]) for (const [xa, ya, xb, yb] of [[2.42, -0.1, 2.28, F], [1.72, -0.1, 1.9, F], [2.36, F + 0.42, 1.83, F + 0.42]]) {
+        const [x0, y0] = P(sd * xa, ya), [x1, y1] = P(sd * xb, yb);
+        ctx.strokeStyle = '#5a626e'; ctx.lineWidth = 0.06 * ppm; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+        ctx.strokeStyle = 'rgba(230,238,250,.45)'; ctx.lineWidth = 0.015 * ppm; ctx.beginPath(); ctx.moveTo(x0 - 0.015 * ppm, y0); ctx.lineTo(x1 - 0.015 * ppm, y1); ctx.stroke();
+      }
+      // sølvfjedre
+      ctx.strokeStyle = '#c3cad4'; ctx.lineWidth = Math.max(1, 0.014 * ppm); ctx.lineJoin = 'round';
+      for (const sd of [-1, 1]) {
+        ctx.beginPath();
+        for (let i = 0; i <= 12; i++) {
+          const x = sd * (BED.half + (BED.frameHalf - BED.half) * (i / 12)), y = -0.01 + (i === 0 || i === 12 ? 0 : i % 2 ? 0.025 : -0.025);
+          const [sx, sy] = P(x, y); if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
+      // sort dug
+      const n = 48, top = [];
+      for (let i = 0; i <= n; i++) { const x = -BED.half + (2 * BED.half * i) / n; top.push(P(x, -this.bedProfile(x, a))); }
+      ctx.beginPath(); top.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      for (let i = n; i >= 0; i--) ctx.lineTo(top[i][0], top[i][1] + 0.04 * ppm);
+      ctx.closePath(); ctx.fillStyle = '#101216'; ctx.fill();
+      ctx.beginPath(); top.forEach(([x, y], i) => (i ? ctx.lineTo(x, y + 1) : ctx.moveTo(x, y + 1)));
+      ctx.strokeStyle = 'rgba(150,175,215,.5)'; ctx.lineWidth = Math.max(1, 0.01 * ppm); ctx.stroke();
+      // blå endepuder
+      for (const sd of [-1, 1]) {
+        const [x0, y0] = P(sd * 2.02, 0.1), [x1, y1] = P(sd * 2.62, -0.05), x = Math.min(x0, x1), w = Math.abs(x1 - x0), h = y1 - y0;
+        const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, '#5b9bff'); g.addColorStop(0.35, '#1f6fd1'); g.addColorStop(1, '#123f7a');
+        ctx.beginPath(); ctx.roundRect(x, y0, w, h, h * 0.4); ctx.fillStyle = g; ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    // Lem/krop med blød rund skygge (lys fra oven til venstre)
+    cylFill(o, p, c, lo = 0.6, hi = 1.35) {
+      const [ax, ay] = p.a, [bx, by] = p.b, mx = (ax + bx) / 2, my = (ay + by) / 2;
+      let nx = -(by - ay), ny = bx - ax; const l = Math.hypot(nx, ny);
+      if (l < 0.5) { nx = -0.6; ny = -0.8; } else { nx /= l; ny /= l; }
+      if (nx * -0.55 + ny * -0.83 < 0) { nx = -nx; ny = -ny; }
+      const g = o.createLinearGradient(mx + nx * p.w, my + ny * p.w, mx - nx * p.w, my - ny * p.w);
+      g.addColorStop(0, shade(c, hi)); g.addColorStop(0.45, c); g.addColorStop(1, shade(c, lo));
+      p.path(); o.fillStyle = g; o.fill();
+    }
+
+    // Herrespringer: blå trøje med guldstribe, lange hvide bukser, kort hår
+    hallAthlete(o, cam, W) {
+      const g = this.bodyGeo(o, cam, W);
+      const SKIN = '#d99a70', SUIT = '#1b4fb3';
+      const fl = g.leftNear ? g.legR : g.legL, nl = g.leftNear ? g.legL : g.legR;
+      const fa = g.leftNear ? g.armR : g.armL, na = g.leftNear ? g.armL : g.armR;
+      const legs = (ps, near) => { for (const p of ps) this.cylFill(o, p, near ? '#eef1f6' : '#d9dee8', 0.84, 1.08); };
+      o.save();
+      for (const p of fa) this.cylFill(o, p, shade(SKIN, 0.8));
+      legs(fl, false);
+      this.cylFill(o, g.torso, SUIT);
+      // guldstribe på trøjen
+      o.save(); g.torso.path(); o.clip();
+      const [hx, hy] = g.torso.a, [sx, sy] = g.torso.b;
+      o.strokeStyle = '#ffd166'; o.lineWidth = 0.03 * cam.ppm;
+      o.beginPath(); o.moveTo(hx + (sx - hx) * 0.1 + 0.2 * cam.ppm, hy + (sy - hy) * 0.1); o.lineTo(sx - 0.2 * cam.ppm, sy); o.stroke();
+      o.restore();
+      this.cylFill(o, g.neck, SKIN);
+      const [cx, cy] = g.head.a, r = g.head.r;
+      const hg = o.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.1, cx, cy, r * 1.05);
+      hg.addColorStop(0, shade(SKIN, 1.3)); hg.addColorStop(1, shade(SKIN, 0.7));
+      g.head.path(); o.fillStyle = hg; o.fill();
+      this.shortHair(o, g, SKIN);
+      legs(nl, true);
+      for (const p of na) this.cylFill(o, p, SKIN);
+      o.restore();
+    }
+
+    // Frisure 1: kortklippet. Tegnes i hovedets eget system (x frem mod næsen, y op), enhed = hovedets radius.
+    shortHair(o, g, skin) {
+      const [cx, cy] = g.head.a, r = g.head.r, [ux, uy] = g.u;
+      let fx = g.nose[0] - cx, fy = g.nose[1] - cy; const fl = Math.hypot(fx, fy);
+      const view = fl / (r * 1.1) > 0.45 ? 'side' : g.nz > 0 ? 'front' : 'back';
+      if (view === 'side') { fx /= fl; fy /= fl; } else { fx = -uy; fy = ux; }
+      const P = (x, y) => [cx + (fx * x + ux * y) * r, cy + (fy * x + uy * y) * r];
+      const d = Math.PI / 180;
+      const [a0, a1] = view === 'side' ? [58 * d, 205 * d] : view === 'front' ? [18 * d, 162 * d] : [-25 * d, 205 * d];
+      // hårgrænse fra panden, hen over øret, til nakken – håret dækker hele issen
+      const ctrl = view === 'side' ? [-0.2, 0.3] : view === 'front' ? [0, 0.5] : [0, -0.75];
+      const pts = [];
+      for (let i = 0; i <= 24; i++) { const a = a0 + ((a1 - a0) * i) / 24; pts.push(P(Math.cos(a) * 1.05, Math.sin(a) * 1.05)); }
+      const e = [Math.cos(a1) * 0.97, Math.sin(a1) * 0.97], b = [Math.cos(a0) * 0.97, Math.sin(a0) * 0.97];
+      for (let i = 0; i <= 12; i++) {
+        const t = i / 12, q = 1 - t;
+        pts.push(P(q * q * e[0] + 2 * t * q * ctrl[0] + t * t * b[0], q * q * e[1] + 2 * t * q * ctrl[1] + t * t * b[1]));
+      }
+      o.beginPath(); pts.forEach(([x, y], i) => (i ? o.lineTo(x, y) : o.moveTo(x, y))); o.closePath();
+      o.fillStyle = '#3a2718'; o.fill();
+      // øjne og øre
+      o.fillStyle = '#1b1b1b';
+      const eye = (x, y) => { const [ex, ey] = P(x, y); o.beginPath(); o.arc(ex, ey, Math.max(1, r * 0.1), 0, Math.PI * 2); o.fill(); };
+      if (view === 'side' && g.nz > -0.09) eye(0.55, 0.12);
+      if (view === 'front') { eye(0.35, 0.1); eye(-0.35, 0.1); }
+      if (view === 'side') { const [qx, qy] = P(-0.12, 0.02); o.fillStyle = shade(skin, 0.8); o.beginPath(); o.ellipse(qx, qy, r * 0.12, r * 0.17, Math.atan2(uy, ux), 0, Math.PI * 2); o.fill(); }
     }
 
     // ---------- Effekter ----------
