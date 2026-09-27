@@ -140,7 +140,9 @@
 
     // Positionsrammen: drej halvdelen af hoftebøjningen tilbage, så lukket/hoftebøjet
     // ligger symmetrisk om rotationsaksen (overkrop og ben mødes).
-    const off = -0.5 * pose.hip - 0.12 * pose.knee;
+    // pose.ax (0-1): 1 = skrueaksen midt mellem krop og lår, 0 = skrueaksen langs rygsøjlen (lukket skrue).
+    const axW = pose.ax == null ? 1 : pose.ax;
+    const off = -axW * (0.5 * pose.hip + 0.12 * pose.knee);
     const co = Math.cos(off), so = Math.sin(off);
     for (let i = 0; i < N; i++) {
       const x = P[i * 3] - cx, y = P[i * 3 + 1] - cy;

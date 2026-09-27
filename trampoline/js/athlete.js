@@ -53,7 +53,7 @@
       this.charge = 0; this.chargeDir = 0; this.armed = null;
       this.flightNo = 0; this.chargeFlight = -1; this.leanPrev = 0;
       this.spin0 = 0; this.lastTakeoffV = 7;
-      this.body = B.solve(this.pose, this.body);
+      this.solveBody();
       this.y = this.feetY + this.standOffset();
       this.updateWorld();
     }
@@ -213,6 +213,15 @@
 
     updateWorld() { B.toWorld(this.body, this.psi, this.phi, this.x, this.y + this.yCorr, this.world); }
 
+    // Løser kroppen. Flyttes skrueaksen (pose.ax), justeres saltovinklen, så overkroppen
+    // bevarer sin vinkel og kun aksen flytter sig – kroppen drejer ikke i et ryk.
+    solveBody() {
+      this.body = B.solve(this.pose, this.body);
+      const comp = -(0.5 * this.pose.hip + 0.12 * this.pose.knee) - this.body.offset;
+      this.phi += comp - (this.axComp || 0);
+      this.axComp = comp;
+    }
+
     // Arkade: lukket skrue roterer saltoen lige så hurtigt som almindelig lukket.
     tuckIsom() {
       const f = this.fx.tight;
@@ -220,8 +229,9 @@
       return this._tuckI;
     }
 
-    approachPose(dt, hip, knee, hand, rate) {
+    approachPose(dt, hip, knee, hand, rate, ax = 1) {
       const p = this.pose;
+      p.ax = TR.approach(p.ax == null ? 1 : p.ax, ax, 8 * dt);
       p.hip = TR.approach(p.hip, hip, rate * dt);
       p.knee = TR.approach(p.knee, knee, rate * 1.1 * dt);
       const hr = 6 * dt;
@@ -255,7 +265,7 @@
       } else {
         this.approachPose(dt, 0.1, 0.55, B.HAND.lieFront, 6);
       }
-      this.body = B.solve(this.pose, this.body);
+      this.solveBody();
 
       // Vip: holdes pilen længe nok på dugen, tages mere rotation med.
       if (this.contact === 'feet') {
@@ -366,8 +376,8 @@
       else if (inp.twist || this.twistRate > 0.5) hand = B.HAND.twist;
       else if (this.control === 'arcade') hand = inp.straight ? B.HAND.straight : B.HAND.side;
       else hand = this.airT < 0.25 ? B.HAND.up : B.HAND.straight;
-      this.approachPose(dt, tg.hip, tg.knee, hand, fx.shapeRate);
-      this.body = B.solve(this.pose, this.body);
+      this.approachPose(dt, tg.hip, tg.knee, hand, fx.shapeRate, tuckTwist ? 0 : 1);
+      this.solveBody();
 
       // Salto: impulsmomentet er bevaret, så vinkelhastigheden følger positionen.
       if (this.control !== 'arcade') this.omega = this.L / this.body.Isom;
@@ -470,7 +480,8 @@
       this.psiTarget = (((halfTurns % 2) + 2) % 2) * Math.PI;
       this.psi = this.psiTarget + (this.psi - halfTurns * Math.PI);
       this.twistRate = 0; this.twistGoal = null; this.omega = 0; this.L = 0; this.vx = 0;
-      this.body = B.solve(this.pose, this.body);
+      this.pose.ax = 1;
+      this.solveBody();
       this.y = this.feetY + this.contactOffset();
       this.yCorr += oldY - this.y;
       // Et tryk lige før landingen tæller som et rigtigt tryk (med negativ tid), ikke som at holde knappen nede.
@@ -512,7 +523,7 @@
     stepCrash(dt) {
       this.crashT += dt;
       this.approachPose(dt, 0.4, 0.7, B.HAND.crash, 6);
-      this.body = B.solve(this.pose, this.body);
+      this.solveBody();
       this.phi = TR.approach(this.phi, this.crashPhi, 4 * dt);
       this.psi = TR.approach(this.psi, Math.round(this.psi / Math.PI) * Math.PI, 3 * dt);
       const rest = this.crashSurface + 0.17;
