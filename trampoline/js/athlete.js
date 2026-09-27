@@ -222,13 +222,6 @@
       this.axComp = comp;
     }
 
-    // Arkade: lukket skrue roterer saltoen lige så hurtigt som almindelig lukket.
-    tuckIsom() {
-      const f = this.fx.tight;
-      if (this._tuckI == null || this._tuckF !== f) { this._tuckF = f; this._tuckI = B.solve({ ...B.shapeTarget('tuck', f), hand: B.HAND.side }).Isom; }
-      return this._tuckI;
-    }
-
     approachPose(dt, hip, knee, hand, rate, ax = 1) {
       const p = this.pose;
       p.ax = TR.approach(p.ax == null ? 1 : p.ax, ax, 8 * dt);
@@ -335,7 +328,7 @@
       this.state = 'air';
       this.airT = 0;
       this.airPressAt = null;
-      this.twistGoal = null; this.twistPrev = false; this.tuckTwistHold = false; // holdes ↓ gennem afsættet, tæller det som et tryk
+      this.twistGoal = null; this.twistPrev = false; // holdes ↓ gennem afsættet, tæller det som et tryk
       this.apexSent = false;
       this.tracker.start(this.phi, this.psi, this.x, this.contact, tilt);
       this.prevTorso = this.torsoAngle(B.toWorld(this.body, this.psi, this.phi, 0, 0, TMPW));
@@ -363,11 +356,9 @@
       }
       const twisting = this.twistGoal != null;
       const holding = !!(inp.tuck || inp.pike || inp.straight || inp.twist || twisting);
-      // Lukket skrue: armene ind til brystet og en mere åben lukket position
-      // (armene bliver ved brystet, til man slipper lukket – også efter skruen er færdig)
-      if (shape !== 'tuck') this.tuckTwistHold = false;
-      const tuckTwist = shape === 'tuck' && (twisting || inp.twist || !!this.tuckTwistHold);
-      if (tuckTwist) this.tuckTwistHold = true;
+      // Lukket skrue: armene ind til brystet og en mere åben lukket position, så længe skruen
+      // er i gang (eller ↓ holdes). Bagefter trækker springeren sig sammen i tæt lukket og roterer hurtigere.
+      const tuckTwist = shape === 'tuck' && (twisting || inp.twist);
       const tg = B.shapeTarget(tuckTwist ? 'tucktwist' : shape, fx.tight);
       let hand;
       if (tuckTwist) hand = B.HAND.tuckTwist;
@@ -388,7 +379,7 @@
         this.glide = holding ? 0 : TR.approach(this.glide || 0, 1, 2.5 * dt);
         const s0 = this.spin0 || 0;
         const target = holding
-          ? s0 * Math.max(1, Math.pow(I_REF / (tuckTwist ? this.tuckIsom() : this.body.Isom), 0.32)) * (shape === 'pike' ? PIKE_BOOST : 1)
+          ? s0 * Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32)) * (shape === 'pike' ? PIKE_BOOST : 1)
           : Math.sign(s0) * Math.min(Math.abs(s0) * TR.lerp(fx.arcadeSlow, fx.arcadeGlide, this.glide),
             TR.lerp(fx.arcadeSlowMax, fx.arcadeGlideMax, this.glide));
         const faster = Math.abs(target) > Math.abs(this.omega);
