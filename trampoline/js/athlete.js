@@ -173,16 +173,19 @@
       const S = this.sats;
       if (S.q != null || S.bottomT == null) return;
       let q = null, label = '';
-      if (S.held) { q = 0.7; label = 'For tidligt'; }
+      if (S.held) { q = 0.8; label = 'For tidligt'; }
       else if (S.pressT != null) {
         const diff = S.pressT - S.bottomT; // negativ = før bunden
-        if (diff >= -0.22 && diff <= 0.1) { q = 1; label = 'Perfekt sats!'; }
-        else if (diff >= -0.35 && diff <= 0.2) { q = 0.85; label = 'God sats'; }
+        if (diff >= -0.35 && diff <= 0.15) { q = 1; label = 'Perfekt sats!'; }
+        else if (diff >= -0.5 && diff <= 0.25) { q = 0.9; label = 'God sats'; }
         else if (diff < 0) { q = 0.7; label = 'For tidligt'; }
         else { q = 0.55; label = 'For sent'; }
       }
       if (q == null) return;
       S.q = q;
+      // Et lidt sent tryk (efter bunden) får kraften komprimeret ind i resten af afsættet.
+      const late = S.pressT != null && !S.held ? Math.max(0, S.pressT - S.bottomT) : 0;
+      S.comp = TR.clamp(0.17 / Math.max(0.04, 0.17 - late), 1, 2.5);
       this.emit('sats', { q, label, quiet: S.speed < 3 });
     }
 
@@ -265,11 +268,12 @@
       this.judgeSats();
 
       let a = -GRAV + BED.K * d - (inp.kill ? 9 : BED.C) * this.vy;
-      if (inp.push && !inp.kill && d > 0 && this.vy >= 0 && S.q != null) {
+      // Et tryk er nok: når satsen er bedømt, virker den gennem hele afsættet.
+      if (!inp.kill && d > 0 && this.vy >= 0 && S.q) {
         const E = 0.5 * this.vy * this.vy + 0.5 * BED.K * d * d - GRAV * d;
         const apex = Math.max(0, E) / GRAV;
         // Fra ryg eller mave kan man ikke sætte af med benene, så satsen er svagere.
-        a += fx.pushAcc * S.q * (this.contact === 'feet' ? 1 : 0.6) * TR.clamp(1 - apex / fx.maxApex, 0, 1);
+        a += fx.pushAcc * S.q * (S.comp || 1) * (this.contact === 'feet' ? 1 : 0.6) * TR.clamp(1 - apex / fx.maxApex, 0, 1);
       }
       const vyPrev = this.vy;
       this.vy += a * dt;
@@ -431,7 +435,7 @@
       this.yCorr += oldY - this.y;
       // Et tryk lige før landingen tæller som et rigtigt tryk (med negativ tid), ikke som at holde knappen nede.
       const since = this.airT - (this.airPressAt == null ? -99 : this.airPressAt);
-      const fresh = this.pushPrev && since <= 0.15;
+      const fresh = this.airPressAt != null && since <= 0.35; // også et kort tryk, der allerede er sluppet
       // Landing væk fra midten koster højde (energi): intet inden for 35 cm, op til 25 % ved kanten.
       const off = TR.clamp((Math.abs(this.x) - 0.35) / (BED.half - 0.35), 0, 1);
       if (off > 0) this.vy *= Math.sqrt(1 - 0.25 * off);

@@ -32,7 +32,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 
 - **Tre positioner:** strakt, **hoftebøjet** og lukket.
 - **Landing på ryg og mave:** rygfald og mavefald, og videre derfra, fx til fødderne, ball-out, cody og kaboom.
-- **Timing af satsen:** en ring på dugen viser, hvornår man skal trykke SATS, og man får at vide, om satsen var perfekt, god, for tidlig eller for sen. Perfekt timing giver mest højde.
+- **Timing af satsen:** et kort tryk er nok, og vinduet for en perfekt sats er bredt (ca. 0,35 s før til 0,15 s efter dugens bund). En ring på dugen viser, hvornår man skal trykke SATS, og man får at vide, om satsen var perfekt, god, for tidlig eller for sen. Perfekt timing giver mest højde.
 - **Rotationsmåler:** viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket.
 - **Skruer i strakt og lukket position** (lukket skrue: Shift + S). Skruehastigheden følger kroppens inertimoment, så strakt skruer hurtigst.
 - **Realistiske højder i roligt tempo:** tyngdepunktet løftes ca. 3,6 m (flyvetid ~1,7 s) uden træning og ~5,3 m (~2,1 s) med fuld Kraft – som hos eliten. Højden holdes med gode satser og falder kun ved dårlig timing eller landing væk fra midten (op til 25 % ved kanten). Spillet kører i 70 % tempo, og kameraet følger med op.
