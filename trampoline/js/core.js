@@ -57,7 +57,7 @@
       maxApex: 4.2 + 0.35 * p, // loft for satsen, meter over dugen
       pushAcc: 28 + 3 * p,
       rotGain: 8 * (1 + 0.05 * r),
-      twistRate: 12.5 * (1 + 0.17 * t), // rad/s i strakt (~2 skruer/s uden træning, som i Walaber)
+      twistRate: 11.2 * (1 + 0.17 * t), // rad/s i strakt (ca. 1,8 skruer/s uden træning)
       twistStop: 70,
       shapeRate: 8 * (1 + 0.2 * f),
       tight: f,
