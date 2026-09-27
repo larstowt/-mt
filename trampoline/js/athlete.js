@@ -379,7 +379,7 @@
         this.glide = holding ? 0 : TR.approach(this.glide || 0, 1, 2.5 * dt);
         const s0 = this.spin0 || 0;
         const target = holding
-          ? s0 * Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32)) * (shape === 'pike' ? PIKE_BOOST : 1)
+          ? s0 * Math.max(1, Math.pow(I_REF / this.body.Isom, 0.32)) * (shape === 'pike' ? PIKE_BOOST : 1) * (twisting && !tuckTwist ? fx.twistSpin : 1)
           : Math.sign(s0) * Math.min(Math.abs(s0) * TR.lerp(fx.arcadeSlow, fx.arcadeGlide, this.glide),
             TR.lerp(fx.arcadeSlowMax, fx.arcadeGlideMax, this.glide));
         const faster = Math.abs(target) > Math.abs(this.omega);

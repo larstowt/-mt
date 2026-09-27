@@ -57,7 +57,7 @@
       maxApex: 4.2 + 0.35 * p, // loft for satsen, meter over dugen
       pushAcc: 28 + 3 * p,
       rotGain: 8 * (1 + 0.05 * r),
-      twistRate: 10 * (1 + 0.17 * t), // rad/s i strakt (ca. 1,6 skruer/s uden træning)
+      twistRate: 12.5 * (1 + 0.17 * t), // rad/s i strakt (~2 skruer/s uden træning, som i Walaber)
       twistStop: 70,
       shapeRate: 8 * (1 + 0.2 * f),
       tight: f,
@@ -65,6 +65,7 @@
       // Arkade-styring (som Walaber's Trampoline): rotationen kommer fra afsættet;
       // hold en position for at rotere, slip alle knapper for at bremse ned.
       arcadeGain: 9.5 * (1 + 0.28 * r),
+      twistSpin: 0.8, // saltoen roterer langsommere, mens man skruer (strakt skrue)
       // Som i Walaber: når man åbner, falder farten brat (~0,1 s) og glider så langsomt ned
       // frem mod landing. Farten har et fast loft, så den ikke vokser med Rotation-færdigheden.
       arcadeSlow: 0.45, arcadeSlowMax: 2.2, // rad/s lige efter åbning (~125°/s)
