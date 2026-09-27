@@ -25,7 +25,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 
 ## Styring af rotation
 
-- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at lade rotation op – også mens du er i luften. Slip for at bruge ladningen: i næste afsæt, eller med det samme, hvis du holdt pilen gennem afsættet. I luften holder du en position for at rotere: strakt (F), hoftebøjet (D), lukket (S) eller skrue (Shift; strakt eller lukket med Shift+S). Slip alle knapper, så bremser rotationen ned.
+- **Arkade (standard, som i Walaber's Trampoline):** hold ← eller → for at lade rotation op – også mens du er i luften. Slip for at bruge ladningen: i næste afsæt, eller med det samme, hvis du holdt pilen gennem afsættet. I luften holder du en position for at rotere: strakt (F), hoftebøjet (D), lukket (S) eller skrue (Shift; strakt eller lukket med Shift+S). Slip alle knapper (åbn), så bremser rotationen brat (ca. 0,1 s) ned til ca. halv strakt fart og glider derefter langsomt ned mod en fjerdedel frem mod landing – målt fra en video af Walaber's Trampoline.
 - **Realistisk:** rotationen tages med fra dugen ved at vippe, og impulsmomentet er bevaret i luften. Vælges under *Spiller*.
 
 ## Hvad er nyt i forhold til originalen

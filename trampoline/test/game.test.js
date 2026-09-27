@@ -287,9 +287,13 @@ test('arkade: pilene lader op uden at rotere; slippes de i luften, bruges ladnin
   assert.ok(a.spin0 > 1.5, `rotation fra afsættet ${a.spin0}`);
   for (let i = 0; i < 60; i++) a.step(1 / 240, { straight: true });
   const w = a.omega;
-  for (let i = 0; i < 72; i++) a.step(1 / 240, {});
+  // Som i Walaber: brat opbremsning (~0,1 s) til ca. en tredjedel, derefter langsom glidning
+  for (let i = 0; i < 24; i++) a.step(1 / 240, {});
+  assert.ok(a.omega < a.fx.arcadeSlow * a.spin0 * 1.15, `brat opbremsning (${a.omega})`);
+  assert.ok(a.omega > a.fx.arcadeGlide * a.spin0, `men stadig en synlig rotation (${a.omega})`);
+  for (let i = 0; i < 48; i++) a.step(1 / 240, {});
   assert.ok(a.omega < w - 1, `uden knapper bremses der ned (${a.omega} < ${w})`);
-  assert.ok(a.omega >= a.fx.arcadeSlow * a.spin0 - 0.01);
+  assert.ok(a.omega >= a.fx.arcadeGlide * a.spin0 - 0.01);
   for (let i = 0; i < 60; i++) a.step(1 / 240, { tuck: true });
   assert.ok(a.omega > w * 1.25, 'lukket roterer hurtigere end strakt');
 });
