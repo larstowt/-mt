@@ -266,7 +266,7 @@
       this.input = new TR.Input();
       this.sfx = new TR.Sfx();
       this.sfx.enabled = save.sound !== false;
-      this.arena = TR.arenaUnlocked(save, save.arena) ? save.arena : 'hall';
+      this.arena = TR.stageOk(save.arena) ? save.arena : 'neon';
       this.mode = null;
       this.demo = true;
       this.bot = new DemoBot();
@@ -354,7 +354,7 @@
     }
 
     setArena(id) {
-      if (!TR.arenaUnlocked(this.save, id)) return;
+      if (!TR.stageOk(id)) return;
       this.arena = id;
       this.save.arena = id;
       this.dirty = true;

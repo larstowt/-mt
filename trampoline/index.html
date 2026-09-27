@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css?v=2026.09.27-20">
+  <link rel="stylesheet" href="style.css?v=2026.09.27-21">
 </head>
 <body>
   <div id="app">
@@ -69,24 +69,19 @@
       <div class="menu-wrap">
         <header class="logo">
           <h1>TRAMPOLIN</h1>
-          <p>En hyldest til <em>Walaber's Trampoline</em></p>
         </header>
         <div class="profile glass" id="profileCard"></div>
         <div class="menu-grid">
           <button class="big-btn primary" data-go="free"><span>🤸</span>Fri leg</button>
-          <button class="big-btn" data-go="challenges"><span>⭐</span>Udfordringer</button>
           <button class="big-btn" data-go="routine"><span>🏆</span>Konkurrence</button>
           <button class="big-btn" data-go="time"><span>⏱</span>60 sek. tidsløb</button>
         </div>
         <div class="menu-row">
-          <button class="pill" data-go="skills">Færdigheder <b id="pointsBadge" class="badge" hidden></b></button>
-          <button class="pill" data-go="player">Spiller</button>
           <button class="pill" data-go="help">Styring</button>
-          <button class="pill" id="freeMaxBtn" aria-pressed="false">Fri leg: min springer</button>
           <button class="pill" id="soundBtn">Lyd: til</button>
           <button class="pill" id="fullBtn" hidden>Fuld skærm</button>
         </div>
-        <p class="version muted small">Version 2026.09.27-20</p>
+        <p class="version muted small">Version 2026.09.27-21</p>
         <div class="arena-pick">
           <h3>Bane</h3>
           <div id="arenaList" class="arena-list"></div>
@@ -125,12 +120,6 @@
             <button class="seg-btn" data-control="physics" role="radio">Realistisk <small>fysik: rotationen tages med fra dugen</small></button>
           </div>
         </div>
-        <div class="field">Grafik
-          <div class="seg" id="gfxSeg" role="radiogroup" aria-label="Grafik">
-            <button class="seg-btn" data-gfx="neon" role="radio">Neon-spor <small>glødende silhuet på mørk baggrund</small></button>
-            <button class="seg-btn" data-gfx="classic" role="radio">Klassisk <small>farvet springer i hallen – bruger dine dragtfarver</small></button>
-          </div>
-        </div>
         <div class="stats" id="statsBox"></div>
       </div>
     </section>
@@ -161,8 +150,6 @@
           <h3>Point</h3>
           <p>Hvert spring bedømmes som i rigtig trampolin: <b>D</b> (sværhedsgrad), <b>E</b> (udførelse, max 2,0 pr. spring), <b>T</b> (flyvetid) og <b>H</b> (placering på dugen). Skæve landinger, ufærdige skruer, sen åbning og vandring giver fradrag.</p>
           <p>Springkoden følger FIG-systemet: antal kvarte saltoer, halve skruer pr. salto og position (<b>o</b> lukket, <b>&lt;</b> hoftebøjet, <b>/</b> strakt). Fx er <code>4 1 &lt;</code> en barani hoftebøjet og <code>8 2 0 o</code> en hel-ind lukket.</p>
-          <h3>Færdigheder</h3>
-          <p>Du får XP for alt, du laver, og stjerner for udfordringer. Nye niveauer og stjerner giver point, som du bruger på Kraft, Rotation, Skrue, Smidighed, Luftkontrol og Landing.</p>
           <h3>Udfordr en ven</h3>
           <p>Efter et tidsløb, en rutine eller et udfordringsspring kan du dele et link. Din ven åbner linket og prøver at slå dig.</p>
         </div>
@@ -215,19 +202,19 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/core.js?v=2026.09.27-20"></script>
-  <script src="js/body.js?v=2026.09.27-20"></script>
-  <script src="js/tricks.js?v=2026.09.27-20"></script>
-  <script src="js/athlete.js?v=2026.09.27-20"></script>
-  <script src="js/scoring.js?v=2026.09.27-20"></script>
-  <script src="js/challenges.js?v=2026.09.27-20"></script>
-  <script src="js/share.js?v=2026.09.27-20"></script>
-  <script src="js/input.js?v=2026.09.27-20"></script>
-  <script src="js/audio.js?v=2026.09.27-20"></script>
-  <script src="js/arenas.js?v=2026.09.27-20"></script>
-  <script src="js/render.js?v=2026.09.27-20"></script>
-  <script src="js/game.js?v=2026.09.27-20"></script>
-  <script src="js/ui.js?v=2026.09.27-20"></script>
-  <script src="js/main.js?v=2026.09.27-20"></script>
+  <script src="js/core.js?v=2026.09.27-21"></script>
+  <script src="js/body.js?v=2026.09.27-21"></script>
+  <script src="js/tricks.js?v=2026.09.27-21"></script>
+  <script src="js/athlete.js?v=2026.09.27-21"></script>
+  <script src="js/scoring.js?v=2026.09.27-21"></script>
+  <script src="js/challenges.js?v=2026.09.27-21"></script>
+  <script src="js/share.js?v=2026.09.27-21"></script>
+  <script src="js/input.js?v=2026.09.27-21"></script>
+  <script src="js/audio.js?v=2026.09.27-21"></script>
+  <script src="js/arenas.js?v=2026.09.27-21"></script>
+  <script src="js/render.js?v=2026.09.27-21"></script>
+  <script src="js/game.js?v=2026.09.27-21"></script>
+  <script src="js/ui.js?v=2026.09.27-21"></script>
+  <script src="js/main.js?v=2026.09.27-21"></script>
 </body>
 </html>

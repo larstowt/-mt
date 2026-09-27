@@ -35,11 +35,6 @@
       $('pauseHelpBtn').addEventListener('click', () => { this.helpFromPause = true; this.show('help'); });
       $('resMenuBtn').addEventListener('click', () => this.toMenu());
       $('retryBtn').addEventListener('click', () => { if (this.result && this.result.retry) this.result.retry(); });
-      $('freeMaxBtn').addEventListener('click', () => {
-        this.save.freeMax = !this.save.freeMax;
-        TR.persist(this.save); this.renderMenu();
-        this.toast(this.save.freeMax ? 'Fri leg: fuldt trænet – alle færdigheder på max (ingen XP eller rekord).' : 'Fri leg: din egen springer med dine færdigheder.');
-      });
       $('soundBtn').addEventListener('click', () => {
         this.save.sound = !(this.save.sound !== false);
         g.sfx.enabled = this.save.sound; g.sfx.unlock();
@@ -85,7 +80,8 @@
       const g = this.game, M = TR.Modes;
       if (where === 'help') this.helpFromPause = false;
       switch (where) {
-        case 'free': return this.start(() => g.startMode(new M.FreeMode(g, this.save.freeMax ? { skills: TR.MAX_SKILLS } : {})));
+        // Fri leg: altid fuldt trænet
+        case 'free': return this.start(() => g.startMode(new M.FreeMode(g, { skills: TR.MAX_SKILLS })));
         case 'time': return this.start(() => g.startMode(new M.FreeMode(g, { time: 60 })));
         case 'routine': return this.start(() => g.startMode(new M.RoutineMode(g, {})));
         case 'menu':
@@ -148,26 +144,16 @@
     renderMenu() {
       const s = this.save;
       const li = TR.levelInfo(s.xp);
-      const stars = TR.totalStars(s);
       $('profileCard').innerHTML = `
         <div class="lvl"><b>${li.level}</b><small>niveau</small></div>
         <div class="grow">
           <div class="pname">${esc(s.name)}</div>
           <div class="xpbar"><i style="width:${Math.round(li.frac * 100)}%"></i></div>
-          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · ⭐ ${stars}/${TR.Challenges.MAX_STARS} · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
+          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
         </div>`;
-      const pts = TR.freePoints(s);
-      $('pointsBadge').hidden = !pts;
-      $('pointsBadge').textContent = pts;
       $('soundBtn').textContent = `Lyd: ${s.sound !== false ? 'til' : 'fra'}`;
-      $('freeMaxBtn').textContent = `Fri leg: ${s.freeMax ? 'fuldt trænet' : 'min springer'}`;
-      $('freeMaxBtn').classList.toggle('on', !!s.freeMax);
-      $('freeMaxBtn').setAttribute('aria-pressed', s.freeMax ? 'true' : 'false');
-      $('arenaList').innerHTML = TR.ARENAS.map((a) => {
-        const ok = TR.arenaUnlocked(s, a.id);
-        return `<button class="arena ${a.id} ${this.game.arena === a.id ? 'sel' : ''}" data-arena="${a.id}" ${ok ? '' : 'disabled'}>
-          <b>${esc(a.name)}</b><small>${ok ? esc(a.tagline) : `🔒 Kræver ${a.need} ⭐`}</small></button>`;
-      }).join('');
+      $('arenaList').innerHTML = TR.STAGES.map((a) => `<button class="arena ${a.id} ${this.game.arena === a.id ? 'sel' : ''}" data-arena="${a.id}">
+          <b>${esc(a.name)}</b><small>${esc(a.tagline)}</small></button>`).join('');
       $('arenaList').querySelectorAll('[data-arena]').forEach((b) => b.addEventListener('click', () => { this.game.setArena(b.dataset.arena); TR.persist(this.save); this.renderMenu(); }));
     }
 
@@ -218,13 +204,6 @@
         b.classList.toggle('sel', on);
         b.setAttribute('aria-checked', on ? 'true' : 'false');
         b.onclick = () => { s.control = b.dataset.control; TR.persist(s); this.renderPlayer(); };
-      });
-      const gfx = s.gfx === 'classic' ? 'classic' : 'neon';
-      document.querySelectorAll('[data-gfx]').forEach((b) => {
-        const on = b.dataset.gfx === gfx;
-        b.classList.toggle('sel', on);
-        b.setAttribute('aria-checked', on ? 'true' : 'false');
-        b.onclick = () => { s.gfx = b.dataset.gfx; TR.persist(s); this.renderPlayer(); };
       });
       for (const key of Object.keys(SWATCH)) {
         const box = $(key + 'Sw');

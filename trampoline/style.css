@@ -90,6 +90,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .arena small { opacity: 0.85; font-size: 12px; }
 .arena.sel { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.25); }
 .arena:disabled { filter: grayscale(0.9) brightness(0.6); cursor: not-allowed; }
+.neon { background: linear-gradient(135deg, #05030d, #3a0f5c 60%, #ff2bd6); }
 .hall { background: linear-gradient(135deg, #c9965e, #6f8fb8); }
 .sunset { background: linear-gradient(135deg, #6a3d8f, #e0607e 60%, #ffa25c); }
 .aurora { background: linear-gradient(135deg, #08183a, #1f8a70 60%, #7b8cff); }
