@@ -141,7 +141,7 @@
       if (this.state === 'crash') { this.charge = 0; this.armed = null; this.leanPrev = lean; return; }
       if (lean) {
         if (this.chargeDir !== lean || this.charge === 0) { this.chargeDir = lean; this.charge = 0; this.chargeFlight = this.flightNo; }
-        this.charge = Math.min(1, this.charge + dt / 1.0);
+        this.charge = Math.min(1, this.charge + dt / 0.5); // fuld ladning på 0,5 s spiltid
         this.armed = null;
       } else if (this.leanPrev && this.charge > 0) {
         const amt = this.charge, dir = this.chargeDir;
