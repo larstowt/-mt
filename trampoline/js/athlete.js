@@ -380,7 +380,7 @@
       const tmax = fx.twistRate * Math.pow(TW_REF / this.body.Itw, 0.6);
       if (twisting) {
         const rem = this.twistGoal - this.psi;
-        this.twistRate = Math.min(TR.approach(this.twistRate, tmax, 45 * dt), Math.sqrt(2 * fx.twistStop * Math.max(0, rem)) + 0.3);
+        this.twistRate = Math.min(TR.approach(this.twistRate, tmax, 160 * dt), Math.sqrt(2 * fx.twistStop * Math.max(0, rem)) + 0.3);
         if (rem < 0.02 || this.twistRate * dt > rem) { this.psi = this.twistGoal; this.twistRate = 0; this.twistGoal = null; }
       } else if (this.twistRate > 0) {
         const next = Math.ceil(this.psi / Math.PI - 1e-6) * Math.PI;
