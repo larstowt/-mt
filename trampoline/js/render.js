@@ -489,200 +489,142 @@
     }
 
     // ================= Neon-spor =================
+    // Tegnet som i stilforslaget: trampolinen set lige fra siden, springeren som ét glødende omrids.
     renderNeon(game, ctx, cam, a, dt) {
       const pal = NEON[game.arena] || NEON.hall;
-      // Ringe i dugen ved landing og afsæt
       if (a.bedDepth > 0.02 && this.prevDepth <= 0.02) this.rings.push({ x: a.x, t: 0, k: 1 });
       if (a.bedDepth <= 0.02 && this.prevDepth > 0.02) this.rings.push({ x: a.x, t: 0, k: 0.6 });
       this.prevDepth = a.bedDepth;
       for (const r of this.rings) r.t += dt;
       this.rings = this.rings.filter((r) => r.t < 0.6);
+      // Spor: et billede pr. frame i luften, de seneste 16
+      if (!this.ntrail) this.ntrail = [];
+      const spinning = a.state === 'air' && (Math.abs(a.omega) > 2 || a.twistRate > 2);
+      if (spinning) { this.ntrail.push(Float64Array.from(a.world)); if (this.ntrail.length > 16) this.ntrail.shift(); }
+      else if (a.state !== 'air') this.ntrail.length = 0;
+      else if (this.ntrail.length) this.ntrail.shift();
 
-      this.neonBg(ctx, cam, pal, game.arena === 'final' ? cam.boardText || pal.sign : pal.sign);
+      this.neonBg(ctx, cam, pal);
       this.heightMeter(ctx, cam);
-      this.neonTrampBack(ctx, cam, a, pal);
-      this.neonShadow(ctx, cam, a, pal);
+      this.neonTramp(ctx, cam, a, pal);
       if (!game.demo) this.satsRing(ctx, cam, a);
       this.lastAthleteX = a.x;
-      this.updateTrail(a, dt);
       this.neonAthlete(ctx, cam, a, pal);
-      this.neonTrampFront(ctx, cam, a, pal);
       this.updateParticles(dt);
       ctx.save(); ctx.globalCompositeOperation = 'lighter'; this.drawParticles(ctx, cam); ctx.restore();
       this.drawFloaters(ctx, cam, dt);
       this.drawPopups(ctx, cam, dt);
-      this.vignette(ctx, cam);
     }
 
-    neonBg(ctx, cam, pal, sign) {
+    neonBg(ctx, cam, pal) {
       const { W, H, ppm } = cam;
       ctx.fillStyle = pal.bg; ctx.fillRect(0, 0, W, H);
       const fy = cam.floorY, cx = cam.sx(0);
-      const g = ctx.createRadialGradient(cx, fy, 10, cx, fy, Math.max(W, H) * 0.75);
-      g.addColorStop(0, pal.haze + '0.38)'); g.addColorStop(1, pal.haze + '0)');
+      const g = ctx.createRadialGradient(W / 2, fy, 10, W / 2, fy, W * 0.7);
+      g.addColorStop(0, pal.haze + '0.35)'); g.addColorStop(1, pal.haze + '0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      // Stjerner med parallakse
-      const par = cam.bottom * 0.55;
+      const par = cam.bottom * 0.6;
       for (const st of STARS) {
-        const x = cam.sx(st.x * 0.8), y = cam.sy(st.y + 1.5 + par);
+        const x = cam.sx(st.x * 0.8), y = cam.sy(st.y + par);
         if (y < -2 || y > fy || x < -2 || x > W + 2) continue;
-        ctx.globalAlpha = st.a * (0.65 + 0.35 * Math.sin(this.t * 1.7 + st.p));
-        ctx.fillStyle = '#dbeaff'; ctx.fillRect(x, y, st.s, st.s);
+        ctx.fillStyle = `rgba(200,230,255,${(st.a * (0.6 + 0.4 * Math.sin(this.t * 2 + st.x * 3))).toFixed(3)})`;
+        ctx.fillRect(x, y, st.s, st.s);
       }
-      ctx.globalAlpha = 1;
-      // Neonskilt i baggrunden
-      const sy = cam.sy(8.2 + cam.bottom * 0.4);
-      if (sy > -40 && sy < fy) {
-        ctx.save();
-        const fs = Math.max(18, 0.62 * ppm);
-        ctx.font = `800 ${fs}px system-ui, -apple-system, 'Segoe UI', sans-serif`;
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.lineWidth = Math.max(1.5, fs / 22); ctx.strokeStyle = pal.grid;
-        ctx.shadowColor = pal.grid; ctx.shadowBlur = fs / 2.5; ctx.globalAlpha = 0.55;
-        ctx.strokeText(sign, cx, sy);
-        ctx.restore();
-      }
-      // Perspektivgulv
       if (fy < H) {
         ctx.save();
-        ctx.strokeStyle = pal.grid; ctx.lineWidth = 1; ctx.globalAlpha = 0.35;
+        ctx.strokeStyle = pal.grid; ctx.lineWidth = 1; ctx.globalAlpha = 0.45;
         ctx.beginPath();
-        for (let i = -18; i <= 18; i++) { ctx.moveTo(cx + i * 0.55 * ppm, fy); ctx.lineTo(cx + i * 1.9 * ppm, H + 2 * ppm); }
+        for (let i = -14; i <= 14; i++) { ctx.moveTo(cx + i * 0.5 * ppm, fy); ctx.lineTo(cx + i * 1.6 * ppm, H); }
         ctx.stroke();
-        for (let i = 1; i <= 8; i++) {
-          const y = fy + (H - fy + ppm) * Math.pow(i / 8, 1.8);
-          ctx.globalAlpha = 0.2 + 0.4 * (i / 8);
+        for (let i = 0; i < 8; i++) {
+          const y = fy + (H - fy) * Math.pow(i / 7, 1.8);
+          ctx.globalAlpha = 0.3 + 0.5 * (i / 7);
           ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
-        ctx.globalAlpha = 0.9; ctx.lineWidth = 2; ctx.shadowColor = pal.grid; ctx.shadowBlur = 12;
+        ctx.globalAlpha = 0.9; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(W, fy); ctx.stroke();
         ctx.restore();
       }
     }
 
-    glowLine(ctx, color, width, blur, fn) {
-      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.shadowColor = color; ctx.shadowBlur = blur;
-      ctx.beginPath(); fn(); ctx.stroke();
-    }
-
-    bedEdgePath(ctx, cam, a, side) {
-      const n = 48;
-      for (let i = 0; i <= n; i++) {
-        const x = -BED.half + (2 * BED.half * i) / n, y = this.edgeY(cam, a, x, side);
-        if (i === 0) ctx.moveTo(cam.sx(x), y); else ctx.lineTo(cam.sx(x), y);
-      }
-    }
-
-    neonTrampBack(ctx, cam, a, pal) {
-      const ppm = cam.ppm, fh = BED.frameHalf, fz = BED.frameWidth * DY;
-      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      ctx.globalAlpha = 0.5;
-      this.glowLine(ctx, pal.frame, Math.max(1, 0.02 * ppm), 6, () => {
-        for (const x of [-2.3, 0, 2.3]) { ctx.moveTo(cam.sx(x), cam.sy(fz)); ctx.lineTo(cam.sx(x), cam.sy(BED.floor + fz)); }
-      });
-      this.glowLine(ctx, pal.frame, Math.max(1.5, 0.03 * ppm), 8, () => { ctx.moveTo(cam.sx(-fh), cam.sy(fz + 0.03)); ctx.lineTo(cam.sx(fh), cam.sy(fz + 0.03)); });
-      // bageste fjedre (hver anden)
-      ctx.globalAlpha = 0.35; ctx.shadowBlur = 0; ctx.strokeStyle = pal.frame; ctx.lineWidth = 1;
-      for (let x = -BED.half + 0.1; x <= BED.half - 0.05; x += 0.38) this.spring(ctx, cam.sx(x), cam.sy(fz), cam.sx(x), this.edgeY(cam, a, x, 1), 3, 0.025 * ppm);
-      ctx.globalAlpha = 1;
-      // dugen: mørk flade med glødende bagkant
+    neonTramp(ctx, cam, a, pal) {
+      const ppm = cam.ppm, F = BED.floor, P = (x, y) => [cam.sx(x), cam.sy(y)];
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.shadowColor = pal.frame; ctx.shadowBlur = 10;
+      ctx.strokeStyle = pal.frame; ctx.globalAlpha = 0.8; ctx.lineWidth = Math.max(1.5, 0.02 * ppm);
+      // ben og tværstivere (samme mål som i stilforslaget)
       ctx.beginPath();
-      this.bedEdgePath(ctx, cam, a, 1);
-      for (let i = 48; i >= 0; i--) { const x = -BED.half + (2 * BED.half * i) / 48; ctx.lineTo(cam.sx(x), this.edgeY(cam, a, x, -1)); }
-      ctx.closePath();
-      ctx.fillStyle = pal.bg; ctx.globalAlpha = 0.9; ctx.fill(); ctx.globalAlpha = 1;
-      ctx.save(); ctx.clip();
-      ctx.strokeStyle = pal.bed; ctx.globalAlpha = 0.12; ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let x = -BED.half + 0.27; x < BED.half; x += 0.27) { ctx.moveTo(cam.sx(x), this.edgeY(cam, a, x, 1)); ctx.lineTo(cam.sx(x), this.edgeY(cam, a, x, -1)); }
-      ctx.stroke();
-      ctx.globalAlpha = 0.6; ctx.lineWidth = Math.max(1, 0.025 * ppm);
-      const my = (this.edgeY(cam, a, 0, 1) + this.edgeY(cam, a, 0, -1)) / 2;
-      ctx.beginPath(); ctx.moveTo(cam.sx(-0.3), my); ctx.lineTo(cam.sx(0.3), my); ctx.stroke();
-      ctx.restore();
-      ctx.globalAlpha = 0.8;
-      this.glowLine(ctx, pal.bed, Math.max(1.5, 0.022 * ppm), 10, () => this.bedEdgePath(ctx, cam, a, 1));
-      // endefjedre og endepuder
-      ctx.globalAlpha = 0.5; ctx.shadowBlur = 0; ctx.strokeStyle = pal.frame; ctx.lineWidth = 1;
-      for (const sd of [-1, 1]) for (let k = -2; k <= 2; k += 2) { const yy = cam.sy(k * 0.07); this.spring(ctx, cam.sx(sd * BED.half), yy, cam.sx(sd * (fh - 0.1)), yy, 4, 0.02 * ppm); }
-      ctx.globalAlpha = 0.9;
       for (const sd of [-1, 1]) {
-        this.glowLine(ctx, pal.frame, Math.max(1.5, 0.025 * ppm), 8, () => {
-          const x0 = cam.sx(sd * (fh - 0.12)), x1 = cam.sx(sd * fh);
-          ctx.rect(Math.min(x0, x1), cam.sy(fz + 0.07), Math.abs(x1 - x0), cam.sy(-fz - 0.05) - cam.sy(fz + 0.07));
-        });
+        for (const [xa, ya, xb, yb] of [[2.42, -0.1, 2.28, F], [1.72, -0.1, 1.9, F], [2.36, F + 0.42, 1.83, F + 0.42]]) {
+          const [x0, y0] = P(sd * xa, ya), [x1, y1] = P(sd * xb, yb);
+          ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+        }
       }
-      ctx.restore();
-    }
-
-    neonTrampFront(ctx, cam, a, pal) {
-      const ppm = cam.ppm, fh = BED.frameHalf, fz = -BED.frameWidth * DY;
-      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      // dugens underside skjuler fødderne, når dugen trykkes ned
+      ctx.stroke();
+      // endepuder og fjedre
+      for (const sd of [-1, 1]) {
+        const [x0, y0] = P(sd * 2.02, 0.1), [x1, y1] = P(sd * 2.62, -0.05);
+        ctx.beginPath(); ctx.roundRect(Math.min(x0, x1), y0, Math.abs(x1 - x0), y1 - y0, 4); ctx.stroke();
+        ctx.beginPath();
+        const n = 12;
+        for (let i = 0; i <= n; i++) {
+          const x = sd * (BED.half + (BED.frameHalf - BED.half) * (i / n));
+          const y = -0.01 + (i === 0 || i === n ? 0 : i % 2 ? 0.025 : -0.025);
+          const [sx, sy] = P(x, y);
+          if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+      }
+      // dugen: én glødende linje, der trykkes ned
+      ctx.globalAlpha = 1; ctx.shadowColor = pal.bed; ctx.shadowBlur = 16;
+      ctx.strokeStyle = pal.bed; ctx.lineWidth = Math.max(2, 0.035 * ppm);
       ctx.beginPath();
-      this.bedEdgePath(ctx, cam, a, -1);
-      ctx.lineTo(cam.sx(BED.half), cam.sy(fz) + 2); ctx.lineTo(cam.sx(-BED.half), cam.sy(fz) + 2);
-      ctx.closePath(); ctx.fillStyle = pal.bg; ctx.fill();
-      this.glowLine(ctx, pal.bed, Math.max(2, 0.035 * ppm), 16, () => this.bedEdgePath(ctx, cam, a, -1));
-      ctx.globalAlpha = 0.45; ctx.shadowBlur = 0; ctx.strokeStyle = pal.frame; ctx.lineWidth = 1;
-      for (let x = -BED.half + 0.1; x <= BED.half - 0.05; x += 0.38) this.spring(ctx, cam.sx(x), this.edgeY(cam, a, x, -1), cam.sx(x), cam.sy(fz), 3, 0.03 * ppm);
-      ctx.globalAlpha = 0.85;
-      this.glowLine(ctx, pal.frame, Math.max(1.5, 0.025 * ppm), 8, () => {
-        for (const x of [-2.3, 2.3]) { ctx.moveTo(cam.sx(x), cam.sy(fz)); ctx.lineTo(cam.sx(x + Math.sign(x) * 0.25), cam.sy(BED.floor + fz * 0.3)); }
-        ctx.moveTo(cam.sx(-2.3), cam.sy(BED.floor + 0.37)); ctx.lineTo(cam.sx(2.3), cam.sy(BED.floor + 0.37));
-      });
-      ctx.globalAlpha = 1;
-      const top = cam.sy(fz + 0.02), h = 0.16 * ppm;
-      this.roundRect(ctx, cam.sx(-fh), top, cam.sx(fh) - cam.sx(-fh), h, 0.05 * ppm);
-      ctx.fillStyle = pal.bg; ctx.fill();
-      ctx.strokeStyle = pal.frame; ctx.lineWidth = Math.max(1.5, 0.028 * ppm); ctx.shadowColor = pal.frame; ctx.shadowBlur = 12; ctx.stroke();
-      // ringe
-      ctx.globalCompositeOperation = 'lighter'; ctx.shadowColor = pal.bed; ctx.shadowBlur = 10; ctx.strokeStyle = pal.bed; ctx.lineWidth = 2;
+      for (let i = 0; i <= 48; i++) {
+        const x = -BED.half + (2 * BED.half * i) / 48, [sx, sy] = P(x, -this.bedProfile(x, a));
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+      }
+      ctx.stroke();
+      // ring ved landing og afsæt
+      ctx.lineWidth = 2;
       for (const r of this.rings) {
-        const k = r.t / 0.6, rx = (0.35 + k * 2.2) * ppm;
+        const k = r.t / 0.6, [cx, cy] = P(r.x, -0.05);
         ctx.globalAlpha = (1 - k) * r.k;
-        ctx.beginPath(); ctx.ellipse(cam.sx(r.x), cam.sy(-0.05), rx, rx * 0.22, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(cx, cy, (0.4 + k * 2.2) * ppm, (0.08 + k * 0.25) * ppm, 0, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.restore();
     }
 
-    neonShadow(ctx, cam, a, pal) {
-      if (Math.abs(a.x) > BED.half) return;
-      const h = Math.max(0, a.y - 1), k = 1 / (1 + h * 0.4);
-      const x = cam.sx(a.x), y = cam.sy(-this.bedProfile(a.x, a) * 0.85), r = 0.6 * cam.ppm * (0.6 + 0.4 * k);
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, pal.haze + (0.55 * k).toFixed(3) + ')'); g.addColorStop(1, pal.haze + '0)');
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g;
-      ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.25, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    }
-
-    // Springeren som ét glødende omrids. Spor fra tidligere billeder tegnes først og dækkes af de nyere.
+    // Springeren som ét glødende omrids. Sporet tegnes først og dækkes af de nyere billeder.
     neonAthlete(ctx, cam, a, pal) {
-      const frames = this.trail.concat([a.world]);
+      const hist = this.ntrail || [], ghosts = [];
+      for (let i = Math.min(hist.length, 16); i >= 3; i -= 3) ghosts.push({ W: hist[hist.length - i], k: 1 - i / 17 });
+      const frames = ghosts.map((g) => g.W).concat([a.world]);
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const W of frames) for (let i = 0; i < W.length; i += 3) {
         const x = cam.sx(W[i]), y = cam.sy(W[i + 1]);
         if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
       }
-      const m = 0.4 * cam.ppm + 12;
+      const m = 0.3 * cam.ppm + 16;
       x0 = Math.floor(x0 - m); y0 = Math.floor(y0 - m); x1 = Math.ceil(x1 + m); y1 = Math.ceil(y1 + m);
-      const bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0), dpr = this.dpr;
+      const dpr = this.dpr, pw = Math.ceil((x1 - x0) * dpr), ph = Math.ceil((y1 - y0) * dpr);
       if (!this.off) this.off = document.createElement('canvas');
-      const oc = this.off, pw = Math.ceil(bw * dpr), ph = Math.ceil(bh * dpr);
+      const oc = this.off;
       if (oc.width < pw || oc.height < ph) { oc.width = Math.max(oc.width, pw); oc.height = Math.max(oc.height, ph); }
-      const o = oc.getContext('2d');
-      o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, pw, ph);
-      o.setTransform(dpr, 0, 0, dpr, -x0 * dpr, -y0 * dpr);
-      const lw = Math.max(1.2, 0.02 * cam.ppm), n = frames.length;
-      frames.forEach((W, k) => {
-        const main = k === n - 1;
-        const q = (k + 1) / n;
-        this.neonSil(o, cam, W, main ? pal.body : pal.bed, lw, main ? 1 : 0.18 + 0.35 * q, main);
-      });
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
+      const lw = Math.max(1.2, 0.016 * cam.ppm);
+      // spor: kun omrids, uden glød
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (const g of ghosts) {
+        const o = this.offBegin(oc, pw, ph, x0, y0, dpr);
+        this.neonSil(o, cam, g.W, `hsl(${(300 - g.k * 110) | 0},100%,70%)`, lw, false);
+        ctx.globalAlpha = 0.5 * g.k;
+        ctx.drawImage(oc, 0, 0, pw, ph, x0, y0, pw / dpr, ph / dpr);
+      }
+      // selve springeren med glød
+      const o = this.offBegin(oc, pw, ph, x0, y0, dpr);
+      this.neonSil(o, cam, a.world, pal.body, lw, true);
+      ctx.globalAlpha = 1;
       if (typeof ctx.filter === 'string') {
-        ctx.filter = `blur(${Math.max(2, 0.035 * cam.ppm).toFixed(1)}px)`;
+        ctx.filter = `blur(${Math.max(2, 0.03 * cam.ppm).toFixed(1)}px)`;
         ctx.drawImage(oc, 0, 0, pw, ph, x0, y0, pw / dpr, ph / dpr);
         ctx.filter = 'none';
       }
@@ -690,46 +632,64 @@
       ctx.restore();
     }
 
-    neonSil(o, cam, W, color, lw, alpha, main) {
+    offBegin(oc, pw, ph, x0, y0, dpr) {
+      const o = oc.getContext('2d');
+      o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, pw, ph);
+      o.setTransform(dpr, 0, 0, dpr, -x0 * dpr, -y0 * dpr);
+      return o;
+    }
+
+    // Tilspidset lem (kapsel) mellem to punkter med halve bredder wa og wb (pixels)
+    capPath(o, ax, ay, bx, by, wa, wb) {
+      const ang = Math.atan2(by - ay, bx - ax);
+      o.beginPath();
+      o.arc(bx, by, wb, ang - Math.PI / 2, ang + Math.PI / 2);
+      o.arc(ax, ay, wa, ang + Math.PI / 2, ang + (3 * Math.PI) / 2);
+      o.closePath();
+    }
+
+    neonSil(o, cam, W, color, lw, main) {
       const ppm = cam.ppm;
-      const X = (i) => cam.sx(W[i * 3]), Y = (i) => cam.sy(W[i * 3 + 1]);
-      const segs = [
-        [I.hipL, I.kneeL, 0.17], [I.kneeL, I.ankleL, 0.12], [I.ankleL, I.toeL, 0.075],
-        [I.hipR, I.kneeR, 0.17], [I.kneeR, I.ankleR, 0.12], [I.ankleR, I.toeR, 0.075],
-        [I.shL, I.elbowL, 0.095], [I.elbowL, I.handL, 0.08], [I.shR, I.elbowR, 0.095], [I.elbowR, I.handR, 0.08],
-        [I.sh, I.neck, 0.08],
-      ];
-      // torso som i den klassiske tegning
+      const X = (i) => cam.sx(W[i * 3]), Y = (i) => cam.sy(W[i * 3 + 1]), Z = (i) => W[i * 3 + 2];
+      const cap = (p, q, wa, wb) => () => this.capPath(o, X(p), Y(p), X(q), Y(q), wa * ppm, wb * ppm);
+      const legParts = (h, k, an, t) => [cap(h, k, 0.085, 0.056), cap(k, an, 0.056, 0.036), cap(an, t, 0.034, 0.022)];
+      const armParts = (s, e, h) => [cap(s, e, 0.047, 0.036), cap(e, h, 0.036, 0.028)];
+      const legL = legParts(I.hipL, I.kneeL, I.ankleL, I.toeL), legR = legParts(I.hipR, I.kneeR, I.ankleR, I.toeR);
+      const armL = armParts(I.shL, I.elbowL, I.handL), armR = armParts(I.shR, I.elbowR, I.handR);
+      // Overkroppen: afrundet form. Fra siden er den smal, forfra bred (følger skruen).
       const hx = X(I.hip), hy = Y(I.hip), sx = X(I.sh), sy = Y(I.sh);
-      const sep = Math.abs(X(I.shL) - X(I.shR)) + Math.abs(Y(I.shL) - Y(I.shR));
-      const hsep = Math.abs(X(I.hipL) - X(I.hipR)) + Math.abs(Y(I.hipL) - Y(I.hipR));
-      const wS = Math.max(0.26 * ppm, sep + 0.1 * ppm) / 2, wH = Math.max(0.24 * ppm, hsep + 0.12 * ppm) / 2;
-      const dx = sx - hx, dy = sy - hy, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
-      const torso = () => { o.beginPath(); o.moveTo(hx + nx * wH, hy + ny * wH); o.lineTo(sx + nx * wS, sy + ny * wS); o.lineTo(sx - nx * wS, sy - ny * wS); o.lineTo(hx - nx * wH, hy - ny * wH); o.closePath(); };
+      const dx = sx - hx, dy = sy - hy, len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+      const full = Math.hypot(W[I.shL * 3] - W[I.shR * 3], W[I.shL * 3 + 1] - W[I.shR * 3 + 1], W[I.shL * 3 + 2] - W[I.shR * 3 + 2]) || 1;
+      const proj = Math.hypot(X(I.shL) - X(I.shR), Y(I.shL) - Y(I.shR)) / ppm;
+      const fr = Math.min(1, Math.max(0, proj / full));
+      // stationer langs kroppen (andel af hofte→skulder) med halv bredde fra siden og forfra (m)
+      const ST = [[-0.1, 0.07, 0.1], [0.0, 0.095, 0.16], [0.38, 0.085, 0.135], [0.7, 0.108, 0.17], [0.95, 0.088, 0.19], [1.08, 0.045, 0.12]];
+      const L = [], R = [];
+      for (const [u, side, front] of ST) {
+        const w = (side + (front - side) * fr) * ppm, cx = hx + ux * u * len, cy = hy + uy * u * len;
+        L.push([cx + nx * w, cy + ny * w]); R.push([cx - nx * w, cy - ny * w]);
+      }
+      const pts = L.concat(R.reverse());
+      const torso = () => {
+        const n = pts.length, m0 = [(pts[n - 1][0] + pts[0][0]) / 2, (pts[n - 1][1] + pts[0][1]) / 2];
+        o.beginPath(); o.moveTo(m0[0], m0[1]);
+        for (let i = 0; i < n; i++) { const p = pts[i], q = pts[(i + 1) % n]; o.quadraticCurveTo(p[0], p[1], (p[0] + q[0]) / 2, (p[1] + q[1]) / 2); }
+        o.closePath();
+      };
       const r = B.LEN.head * ppm, hdx = X(I.head), hdy = Y(I.head);
-      o.lineCap = 'round'; o.lineJoin = 'round';
-      // 1) tykt omrids i farven
-      o.globalAlpha = alpha; o.strokeStyle = color; o.fillStyle = color;
-      for (const [p, q, w] of segs) { o.lineWidth = w * ppm + 2 * lw; o.beginPath(); o.moveTo(X(p), Y(p)); o.lineTo(X(q), Y(q)); o.stroke(); }
-      o.lineWidth = 0.1 * ppm + 2 * lw; torso(); o.stroke(); o.fill();
-      o.beginPath(); o.arc(hdx, hdy, r + lw, 0, Math.PI * 2); o.fill();
-      // 2) udfyld i sort, så kun den ydre kant bliver tilbage
-      o.globalAlpha = 1; o.strokeStyle = '#000'; o.fillStyle = '#000';
-      for (const [p, q, w] of segs) { o.lineWidth = w * ppm; o.beginPath(); o.moveTo(X(p), Y(p)); o.lineTo(X(q), Y(q)); o.stroke(); }
-      o.lineWidth = 0.1 * ppm; torso(); o.stroke(); o.fill();
-      o.beginPath(); o.arc(hdx, hdy, r, 0, Math.PI * 2); o.fill();
-      if (!main) return;
-      // 3) svage indre linjer og ansigtet, så man kan se skruen
-      o.globalAlpha = 0.35; o.strokeStyle = color; o.lineWidth = Math.max(1, lw * 0.6);
-      for (const [p, q] of [[I.hipL, I.kneeL], [I.kneeL, I.ankleL], [I.hipR, I.kneeR], [I.kneeR, I.ankleR], [I.shL, I.handL], [I.shR, I.handR], [I.hip, I.sh]]) {
-        o.beginPath(); o.moveTo(X(p), Y(p)); o.lineTo(X(q), Y(q)); o.stroke();
-      }
-      const nz = W[I.nose * 3 + 2] - W[I.head * 3 + 2];
-      if (nz > -0.09) {
-        o.globalAlpha = 0.9; o.fillStyle = color;
-        const ex = hdx + (X(I.nose) - hdx) * 0.6, ey = hdy + (Y(I.nose) - hdy) * 0.6 - r * 0.1;
-        o.beginPath(); o.arc(ex, ey, Math.max(1.2, r * 0.14), 0, Math.PI * 2); o.fill();
-      }
+      const head = () => { o.beginPath(); o.arc(hdx, hdy, r, 0, Math.PI * 2); };
+      const neck = cap(I.sh, I.head, 0.045, 0.045);
+      const parts = [...armL, ...armR, ...legL, ...legR, torso, neck, head];
+      o.lineJoin = 'round'; o.lineCap = 'round';
+      // 1) alle dele med tyk streg, 2) alle dele udfyldt i sort ovenpå → kun det ydre omrids bliver tilbage
+      o.strokeStyle = color; o.lineWidth = lw * 2;
+      for (const p of parts) { p(); o.stroke(); }
+      o.fillStyle = '#000';
+      for (const p of parts) { p(); o.fill(); }
+      // 3) svage indre linjer på den nære side, så man kan se ben og arme i positionerne
+      o.strokeStyle = color; o.globalAlpha = 0.35; o.lineWidth = lw * 0.7;
+      const nearLeg = Z(I.kneeL) >= Z(I.kneeR) ? legL : legR, nearArm = Z(I.elbowL) >= Z(I.elbowR) ? armL : armR;
+      for (const p of [nearLeg[0], nearLeg[1], ...nearArm]) { p(); o.stroke(); }
       o.globalAlpha = 1;
     }
 
