@@ -39,7 +39,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 - **Realistiske højder i roligt tempo:** tyngdepunktet løftes ca. 3,6 m (flyvetid ~1,7 s) uden træning og ~5,3 m (~2,1 s) med fuld Kraft – som hos eliten. Højden holdes med gode satser og falder kun ved dårlig timing eller landing væk fra midten (op til 25 % ved kanten). Spillet kører i 70 % tempo, og kameraet følger med op.
 - **FIG-mål:** dug 4,28 × 2,14 m, ramme 5,05 × 2,91 m, 1,15 m over gulvet.
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
-- **Grafik: Neon-spor (standard)** – springeren tegnes som en glødende silhuet med et farvet spor gennem saltoen, og dugen pulserer ved landing. Hver bane har sine egne neonfarver. Den klassiske grafik kan vælges under Spiller → Grafik.
+- **Grafik: Neon-spor (standard)** – springeren tegnes som en glødende silhuet, og dugen pulserer ved landing. Hver bane har sine egne neonfarver. Den klassiske grafik kan vælges under Spiller → Grafik.
 - **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.
 - **Pointsystem som i FIG-trampolin:** D (sværhedsgrad), E (udførelse med fradrag), T (flyvetid) og H (placering). Springene får FIG-koder, fx `8 2 0 o` for en hel-ind lukket, og rigtige navne som Barani, Rudi, Randy, Miller og Triffus.
 - **Spiltyper:** fri leg med kombinationer, 60 sekunders tidsløb, konkurrence med 10 elementer og 25 udfordringer fordelt på 4 baner (Klubhallen, Solnedgang, Nordlys og VM-finalen), også med rygfald, ball-out og cody.

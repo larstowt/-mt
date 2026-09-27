@@ -489,7 +489,7 @@
     }
 
     // ================= Neon-spor =================
-    // Tegnet som i stilforslaget: trampolinen set lige fra siden, springeren som ét glødende omrids.
+    // Trampolinen set lige fra siden, springeren som ét glødende omrids (uden spor).
     renderNeon(game, ctx, cam, a, dt) {
       const pal = NEON[game.arena] || NEON.hall;
       if (a.bedDepth > 0.02 && this.prevDepth <= 0.02) this.rings.push({ x: a.x, t: 0, k: 1 });
@@ -497,13 +497,6 @@
       this.prevDepth = a.bedDepth;
       for (const r of this.rings) r.t += dt;
       this.rings = this.rings.filter((r) => r.t < 0.6);
-      // Spor: et billede pr. frame i luften, de seneste 16
-      if (!this.ntrail) this.ntrail = [];
-      const spinning = a.state === 'air' && (Math.abs(a.omega) > 2 || a.twistRate > 2);
-      if (spinning) { this.ntrail.push(Float64Array.from(a.world)); if (this.ntrail.length > 16) this.ntrail.shift(); }
-      else if (a.state !== 'air') this.ntrail.length = 0;
-      else if (this.ntrail.length) this.ntrail.shift();
-
       this.neonBg(ctx, cam, pal);
       this.heightMeter(ctx, cam);
       this.neonTramp(ctx, cam, a, pal);
@@ -594,11 +587,9 @@
       ctx.restore();
     }
 
-    // Springeren som ét glødende omrids. Sporet tegnes først og dækkes af de nyere billeder.
+    // Springeren som ét glødende omrids.
     neonAthlete(ctx, cam, a, pal) {
-      const hist = this.ntrail || [], ghosts = [];
-      for (let i = Math.min(hist.length, 16); i >= 3; i -= 3) ghosts.push({ W: hist[hist.length - i], k: 1 - i / 17 });
-      const frames = ghosts.map((g) => g.W).concat([a.world]);
+      const frames = [a.world];
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const W of frames) for (let i = 0; i < W.length; i += 3) {
         const x = cam.sx(W[i]), y = cam.sy(W[i + 1]);
@@ -611,14 +602,7 @@
       const oc = this.off;
       if (oc.width < pw || oc.height < ph) { oc.width = Math.max(oc.width, pw); oc.height = Math.max(oc.height, ph); }
       const lw = Math.max(1.2, 0.016 * cam.ppm);
-      // spor: kun omrids, uden glød
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
-      for (const g of ghosts) {
-        const o = this.offBegin(oc, pw, ph, x0, y0, dpr);
-        this.neonSil(o, cam, g.W, `hsl(${(300 - g.k * 110) | 0},100%,70%)`, lw, false);
-        ctx.globalAlpha = 0.5 * g.k;
-        ctx.drawImage(oc, 0, 0, pw, ph, x0, y0, pw / dpr, ph / dpr);
-      }
       // selve springeren med glød
       const o = this.offBegin(oc, pw, ph, x0, y0, dpr);
       this.neonSil(o, cam, a.world, pal.body, lw, true);
