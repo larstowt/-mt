@@ -88,7 +88,7 @@
   // Konkurrence: 10 elementer uden strakte hop imellem.
   class RoutineMode extends Mode {
     begin() { this.items = []; this.keys = new Set(); this.started = false; }
-    get title() { return this.opts.challenge ? this.opts.challenge.title : 'Konkurrence'; }
+    get title() { return this.opts.challenge ? this.opts.challenge.title : this.opts.skills ? 'Konkurrence · fuldt trænet' : 'Konkurrence'; }
     onSkill(skill, ev) {
       if (!this.started) {
         if (skill.dd <= 0) return;

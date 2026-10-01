@@ -42,7 +42,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 - **Grafik: Neon** – springeren tegnes som en glødende silhuet, og dugen pulserer ved landing. To baner: **Neon** (standard) og **Klubhallen**, hvor samme springer og trampolin (samme form og størrelse) er tegnet i rigtige farver med lys og skygge – en herrespringer i blå trøje, hvide bukser og kort hår på en FIG-trampolin med stålstel, blå puder og sort dug.
 - **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.
 - **Pointsystem som i FIG-trampolin:** D (sværhedsgrad), E (udførelse med fradrag), T (flyvetid) og H (placering). Springene får FIG-koder, fx `8 2 0 o` for en hel-ind lukket, og rigtige navne som Barani, Rudi, Randy, Miller og Triffus.
-- **Spiltyper:** fri leg med kombinationer (altid fuldt trænet), 60 sekunders tidsløb og konkurrence med 10 elementer.
+- **Spiltyper:** fri leg med kombinationer og konkurrence med 10 elementer (begge altid fuldt trænet) samt 60 sekunders tidsløb.
 - **Realistisk antal saltoer:** uden træning en enkeltsalto (strakt kræver fuld ladning), dobbelt fra ca. niveau 2–3, tripel lukket fuldt trænet – og firdobbelt hoftebøjet kun lige akkurat med fuld træning, fuld ladning og perfekte satser (som en OL-atlet).
 - **Udfordr en ven:** del et link efter et tidsløb, en rutine eller et spring. Al data ligger i linket, så det kræver ingen server.
 

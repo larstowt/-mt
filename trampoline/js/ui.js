@@ -83,7 +83,8 @@
         // Fri leg: altid fuldt trænet
         case 'free': return this.start(() => g.startMode(new M.FreeMode(g, { skills: TR.MAX_SKILLS })));
         case 'time': return this.start(() => g.startMode(new M.FreeMode(g, { time: 60 })));
-        case 'routine': return this.start(() => g.startMode(new M.RoutineMode(g, {})));
+        // Konkurrence: også altid fuldt trænet
+        case 'routine': return this.start(() => g.startMode(new M.RoutineMode(g, { skills: TR.MAX_SKILLS })));
         case 'menu':
           if (this.screen === 'help' && this.helpFromPause) { this.helpFromPause = false; return this.show('pause'); }
           return this.toMenu();
