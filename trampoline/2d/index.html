@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Trampolin 2D</title>
+  <meta name="description" content="Et trampolinspil i browseren – en hyldest til Walaber's Trampoline. Saltoer, skruer, lukket, hoftebøjet og strakt.">
+  <meta name="theme-color" content="#0b1026">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Trampolin">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="style.css?v=2026.10.01-1">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game" aria-label="Trampolinspil"></canvas>
+
+    <!-- HUD under spillet -->
+    <div id="hud" hidden>
+      <div class="hud-left glass">
+        <div id="hudTitle" class="hud-title"></div>
+        <div id="hudMain" class="hud-main"></div>
+        <div id="hudSub" class="hud-sub"></div>
+      </div>
+      <div class="hud-right">
+        <div class="glass hud-stat"><span id="hudTimer"></span><span id="hudHeight">0,0 m</span></div>
+        <button id="pauseBtn" class="icon-btn glass" aria-label="Pause">❚❚</button>
+      </div>
+      <div id="live" class="live"></div>
+      <div id="hudGoal" class="hud-goal"></div>
+      <ol id="routineList" class="routine-list glass" hidden></ol>
+      <div id="rotMeter" class="rot-meter glass" aria-label="Rotationsmåler">
+        <div class="rm-head"><span id="rmDir">Rotation</span><b id="rmPct">0 %</b></div>
+        <div class="rm-bar"><i id="rmFill"></i><span class="rm-mid"></span></div>
+        <div class="rm-est" id="rmEst">Hold ← eller → på dugen for at vippe</div>
+      </div>
+    </div>
+
+    <!-- Touch-knapper (mobil) -->
+    <div id="touch" hidden>
+      <div class="pad pad-left">
+        <div class="row">
+          <button class="tbtn tbtn-shape tbtn-straight" data-act="straight"><b>STRAKT</b></button>
+          <button class="tbtn tbtn-shape tbtn-twistb" data-act="twist"><b>SKRUE</b></button>
+        </div>
+        <div class="row">
+          <button class="tbtn tbtn-lean" data-act="left" aria-label="Vip venstre">◀</button>
+          <button class="tbtn tbtn-lean" data-act="right" aria-label="Vip højre">▶</button>
+        </div>
+      </div>
+      <div class="pad pad-right">
+        <div class="row">
+          <button class="tbtn tbtn-shape" data-act="pike"><b>HOFTE</b><small>bøjet</small></button>
+          <button class="tbtn tbtn-shape" data-act="tuck"><b>LUKKET</b></button>
+        </div>
+        <div class="row">
+          <button class="tbtn tbtn-stop" data-act="kill"><b>STOP</b></button>
+          <button class="tbtn tbtn-push" data-act="push"><b>SATS</b></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menuer -->
+    <section id="menu" class="screen">
+      <div class="menu-wrap">
+        <header class="logo">
+          <h1>TRAMPOLIN</h1>
+        </header>
+        <div class="profile glass" id="profileCard"></div>
+        <div class="menu-grid">
+          <button class="big-btn primary" data-go="free"><span>🤸</span>Fri leg</button>
+          <button class="big-btn" data-go="routine"><span>🏆</span>Konkurrence</button>
+          <button class="big-btn" data-go="time"><span>⏱</span>60 sek. tidsløb</button>
+        </div>
+        <div class="menu-row">
+          <button class="pill" data-go="help">Styring</button>
+          <button class="pill" id="soundBtn">Lyd: til</button>
+          <button class="pill" id="fullBtn" hidden>Fuld skærm</button>
+        </div>
+        <p class="version muted small">2D-version (gemt) · 2026.10.01-1</p>
+        <div class="arena-pick">
+          <h3>Bane</h3>
+          <div id="arenaList" class="arena-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="challenges" class="screen" hidden>
+      <div class="panel glass wide">
+        <div class="panel-head"><h2>Udfordringer</h2><button class="icon-btn" data-go="menu" aria-label="Tilbage">✕</button></div>
+        <div id="challengeList" class="scroll"></div>
+      </div>
+    </section>
+
+    <section id="skills" class="screen" hidden>
+      <div class="panel glass">
+        <div class="panel-head"><h2>Færdigheder</h2><button class="icon-btn" data-go="menu" aria-label="Tilbage">✕</button></div>
+        <p class="muted" id="skillPoints"></p>
+        <div id="skillList" class="scroll"></div>
+        <div class="panel-foot"><button class="pill" id="respecBtn">Nulstil point</button></div>
+      </div>
+    </section>
+
+    <section id="player" class="screen" hidden>
+      <div class="panel glass">
+        <div class="panel-head"><h2>Spiller</h2><button class="icon-btn" data-go="menu" aria-label="Tilbage">✕</button></div>
+        <label class="field">Navn <input id="nameInput" maxlength="20" autocomplete="off"></label>
+        <div class="field">Dragt <div class="swatches" id="suitSw"></div></div>
+        <div class="field">Stribe <div class="swatches" id="accentSw"></div></div>
+        <div class="field">Bukser <div class="swatches" id="legsSw"></div></div>
+        <div class="field">Hud <div class="swatches" id="skinSw"></div></div>
+        <div class="field">Hår <div class="swatches" id="hairSw"></div></div>
+        <div class="field">Styring
+          <div class="seg" id="controlSeg" role="radiogroup" aria-label="Styring">
+            <button class="seg-btn" data-control="arcade" role="radio">Arkade <small>som Walaber: lad rotation op med pilene, hold en position for at rotere, slip for at bremse</small></button>
+            <button class="seg-btn" data-control="physics" role="radio">Realistisk <small>fysik: rotationen tages med fra dugen</small></button>
+          </div>
+        </div>
+        <div class="stats" id="statsBox"></div>
+      </div>
+    </section>
+
+    <section id="help" class="screen" hidden>
+      <div class="panel glass wide">
+        <div class="panel-head"><h2>Sådan springer du</h2><button class="icon-btn" data-go="menu" aria-label="Tilbage">✕</button></div>
+        <div class="scroll help">
+          <table class="keys">
+            <tr><th></th><th>Tastatur</th><th>Mobil</th></tr>
+            <tr><td>Sats (tryk når ringen bliver gul)</td><td><kbd>Mellemrum</kbd></td><td>SATS</td></tr>
+            <tr><td>Lad rotation op (hold) – slip for at bruge</td><td><kbd>←</kbd> <kbd>→</kbd></td><td>◀ ▶</td></tr>
+            <tr><td>Strakt (hold)</td><td><kbd>F</kbd></td><td>STRAKT</td></tr>
+            <tr><td>Lukket (tuck)</td><td><kbd>S</kbd></td><td>LUKKET</td></tr>
+            <tr><td>Hoftebøjet (pike)</td><td><kbd>D</kbd></td><td>HOFTE</td></tr>
+            <tr><td>Skrue (½ skrue pr. tryk) – strakt, eller lukket med <kbd>↓</kbd>+<kbd>S</kbd></td><td><kbd>↓</kbd></td><td>SKRUE</td></tr>
+            <tr><td>Stop på dugen</td><td><kbd>↑</kbd></td><td>STOP</td></tr>
+            <tr><td>Pause</td><td><kbd>Esc</kbd> / <kbd>P</kbd></td><td>❚❚</td></tr>
+          </table>
+          <h3>Grundidéen</h3>
+          <p><b>Sats:</b> Tryk <b>SATS</b> én gang omkring det tidspunkt, hvor du rammer dugen – et kort tryk er nok, du behøver ikke holde knappen. En ring på dugen skrumper ind mod fødderne – tryk når den rammer målet (den bliver gul). Du får at vide om satsen var <i>perfekt</i>, <i>god</i>, <i>for tidlig</i> eller <i>for sen</i>. Perfekte satser giver mest højde; holder du bare knappen nede, kommer du ikke helt så højt. Lander du væk fra midten (krydset), mister du også højde – op til 25 % ved kanten.</p>
+          <p><b>Rotation (arkade-styring, standard):</b> Hold <b>←</b> eller <b>→</b> for at <b>lade rotation op</b> – gerne allerede mens du er i luften på vej ned. Rotationsmåleren viser, hvor meget du har ladet op, og hvor mange saltoer det rækker til. Du roterer ikke, mens du lader op. <b>Slip pilen</b> for at bruge ladningen: slipper du i luften eller på dugen, roterer du fra næste afsæt; holder du pilen gennem afsættet, starter rotationen først, når du slipper. I luften bestemmer positionen farten: hold <b>STRAKT</b>, <b>HOFTEBØJET</b> eller <b>LUKKET</b> (eller <b>SKRUE</b>) – strakt roligst, lukket hurtigst. <b>Slip alle knapper</b> (åbn), så bremser rotationen brat – ligesom i Walaber – og du glider langsomt rundt det sidste stykke ned til landing. Åbn cirka, når du er tre fjerdedele rundt.</p>
+          <p><b>Realistisk styring</b> (vælges under Spiller): Rotationen tages med fra dugen ved at vippe, og i luften kan pilene kun justere lidt.</p>
+          <p>Kroppen følger fysikken: <b>lukket</b> roterer hurtigst, <b>hoftebøjet</b> lidt langsommere og <b>strakt</b> langsomst. Luk for at rotere, og åbn i tide til at lande på fødderne.</p>
+          <p><b>Ryg og mave:</b> Du må gerne lande på ryggen (rygfald) eller maven (mavefald) og springe videre derfra – fx op til fødderne, ball-out (fra ryg, 1¼ salto forlæns), cody (fra mave, 1¼ salto baglæns) eller kaboom. Lander du lidt skævt på fødderne, kan du springe videre – men med et lavt afsæt, og du vandrer til siden, så du risikerer at ryge ud over kanten. Lander du meget skævt eller på hovedet, falder du.</p>
+          <p><b>Rotationsmåleren</b> nederst viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket. I luften viser den, hvor meget rotation du har.</p>
+          <p><b>Skruer</b> laves strakt (<kbd>↓</kbd>) eller lukket (<kbd>↓</kbd> + <kbd>S</kbd>) – ikke hoftebøjet. Et tryk på <kbd>↓</kbd> i hoftebøjet giver ingen skrue, og trykker du <kbd>D</kbd> midt i en skrue, forbliver du strakt, til skruen er færdig. Strakt skruer hurtigst (ca. 2 skruer i sekundet uden træning). Mens du skruer strakt, roterer saltoen lidt langsommere. Hvert tryk på <kbd>↓</kbd> giver ½ skrue – tryk to gange for en hel skrue, fire gange for en dobbelt. Trykkene lægges i kø, og skruen stopper præcist, når den er færdig. Mens du skruer, fortsætter saltoen. I en lukket skrue trækker springeren armene ind og sidder mere åbent, så saltoen går lidt langsommere – når skruen er færdig, og du stadig holder <kbd>S</kbd>, lukker springeren sig tæt og roterer hurtigere igen (som en lukket full-in).</p>
+          <h3>Point</h3>
+          <p>Hvert spring bedømmes som i rigtig trampolin: <b>D</b> (sværhedsgrad), <b>E</b> (udførelse, max 2,0 pr. spring), <b>T</b> (flyvetid) og <b>H</b> (placering på dugen). Skæve landinger, ufærdige skruer, sen åbning og vandring giver fradrag.</p>
+          <p>Springkoden følger FIG-systemet: antal kvarte saltoer, halve skruer pr. salto og position (<b>o</b> lukket, <b>&lt;</b> hoftebøjet, <b>/</b> strakt). Fx er <code>4 1 &lt;</code> en barani hoftebøjet og <code>8 2 0 o</code> en hel-ind lukket.</p>
+          <h3>Udfordr en ven</h3>
+          <p>Efter et tidsløb, en rutine eller et udfordringsspring kan du dele et link. Din ven åbner linket og prøver at slå dig.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="result" class="screen" hidden>
+      <div class="panel glass result">
+        <h2 id="resTitle"></h2>
+        <div id="resStars" class="res-stars"></div>
+        <div class="res-big"><span id="resBig"></span><small id="resBigLabel"></small></div>
+        <p id="resNote" class="muted"></p>
+        <dl id="resLines" class="res-lines"></dl>
+        <ol id="resList" class="res-list"></ol>
+        <div id="resShare" class="share" hidden>
+          <input id="shareInput" readonly>
+          <button class="pill" id="copyBtn">Kopiér link</button>
+        </div>
+        <div class="panel-foot">
+          <button class="pill" id="shareBtn" hidden>Udfordr en ven</button>
+          <button class="pill primary" id="retryBtn">Prøv igen</button>
+          <button class="pill" id="resMenuBtn">Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pause" class="screen" hidden>
+      <div class="panel glass small">
+        <h2>Pause</h2>
+        <div class="stack">
+          <button class="pill primary" id="resumeBtn">Fortsæt</button>
+          <button class="pill" id="restartBtn">Start forfra</button>
+          <button class="pill" id="pauseHelpBtn">Styring</button>
+          <button class="pill" id="quitBtn">Til menuen</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="incoming" class="screen" hidden>
+      <div class="panel glass small">
+        <h2>Du er blevet udfordret!</h2>
+        <p id="incomingText"></p>
+        <div class="stack">
+          <button class="pill primary" id="acceptBtn">Tag udfordringen</button>
+          <button class="pill" id="declineBtn">Ikke nu</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" hidden></div>
+  </div>
+
+  <script src="js/core.js?v=2026.10.01-1"></script>
+  <script src="js/body.js?v=2026.10.01-1"></script>
+  <script src="js/tricks.js?v=2026.10.01-1"></script>
+  <script src="js/athlete.js?v=2026.10.01-1"></script>
+  <script src="js/scoring.js?v=2026.10.01-1"></script>
+  <script src="js/challenges.js?v=2026.10.01-1"></script>
+  <script src="js/share.js?v=2026.10.01-1"></script>
+  <script src="js/input.js?v=2026.10.01-1"></script>
+  <script src="js/audio.js?v=2026.10.01-1"></script>
+  <script src="js/arenas.js?v=2026.10.01-1"></script>
+  <script src="js/render.js?v=2026.10.01-1"></script>
+  <script src="js/game.js?v=2026.10.01-1"></script>
+  <script src="js/ui.js?v=2026.10.01-1"></script>
+  <script src="js/main.js?v=2026.10.01-1"></script>
+</body>
+</html>
