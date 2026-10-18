@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css?v=2026.10.01-1">
+  <link rel="stylesheet" href="style.css?v=2026.10.18-1">
 </head>
 <body>
   <div id="app">
@@ -28,6 +28,7 @@
       </div>
       <div class="hud-right">
         <div class="glass hud-stat"><span id="hudTimer"></span><span id="hudHeight">0,0 m</span></div>
+        <button id="camBtn" class="icon-btn glass" aria-label="Skift kamera (C)" title="Skift kamera (C)" hidden>🎥</button>
         <button id="pauseBtn" class="icon-btn glass" aria-label="Pause">❚❚</button>
       </div>
       <div id="live" class="live"></div>
@@ -81,9 +82,9 @@
           <button class="pill" id="soundBtn">Lyd: til</button>
           <button class="pill" id="fullBtn" hidden>Fuld skærm</button>
         </div>
-        <p class="version muted small">Version 2026.10.01-1</p>
+        <p class="version muted small">Version 2026.10.18-1</p>
         <div class="arena-pick">
-          <h3>Bane</h3>
+          <h3 id="arenaHead">Bane</h3>
           <div id="arenaList" class="arena-list"></div>
         </div>
       </div>
@@ -202,19 +203,21 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/core.js?v=2026.10.01-1"></script>
-  <script src="js/body.js?v=2026.10.01-1"></script>
-  <script src="js/tricks.js?v=2026.10.01-1"></script>
-  <script src="js/athlete.js?v=2026.10.01-1"></script>
-  <script src="js/scoring.js?v=2026.10.01-1"></script>
-  <script src="js/challenges.js?v=2026.10.01-1"></script>
-  <script src="js/share.js?v=2026.10.01-1"></script>
-  <script src="js/input.js?v=2026.10.01-1"></script>
-  <script src="js/audio.js?v=2026.10.01-1"></script>
-  <script src="js/arenas.js?v=2026.10.01-1"></script>
-  <script src="js/render.js?v=2026.10.01-1"></script>
-  <script src="js/game.js?v=2026.10.01-1"></script>
-  <script src="js/ui.js?v=2026.10.01-1"></script>
-  <script src="js/main.js?v=2026.10.01-1"></script>
+  <script src="js/core.js?v=2026.10.18-1"></script>
+  <script src="js/body.js?v=2026.10.18-1"></script>
+  <script src="js/tricks.js?v=2026.10.18-1"></script>
+  <script src="js/athlete.js?v=2026.10.18-1"></script>
+  <script src="js/scoring.js?v=2026.10.18-1"></script>
+  <script src="js/challenges.js?v=2026.10.18-1"></script>
+  <script src="js/share.js?v=2026.10.18-1"></script>
+  <script src="js/input.js?v=2026.10.18-1"></script>
+  <script src="js/audio.js?v=2026.10.18-1"></script>
+  <script src="js/arenas.js?v=2026.10.18-1"></script>
+  <script src="js/render.js?v=2026.10.18-1"></script>
+  <script src="vendor/three.min.js?v=2026.10.18-1"></script>
+  <script src="js/render3d.js?v=2026.10.18-1"></script>
+  <script src="js/game.js?v=2026.10.18-1"></script>
+  <script src="js/ui.js?v=2026.10.18-1"></script>
+  <script src="js/main.js?v=2026.10.18-1"></script>
 </body>
 </html>

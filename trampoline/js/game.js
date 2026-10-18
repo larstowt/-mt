@@ -262,7 +262,11 @@
     constructor(canvas, save) {
       this.save = save;
       this.athlete = new TR.Athlete(save.skills);
-      this.renderer = new TR.Renderer(canvas);
+      // 3D (Finalearena), hvis browseren kan WebGL – ellers 2D-tegningen
+      this.renderer = null;
+      if (TR.Renderer3D && TR.webglOK()) { try { this.renderer = new TR.Renderer3D(canvas); } catch (e) { this.renderer = null; } }
+      if (!this.renderer) this.renderer = new TR.Renderer(canvas);
+      if (this.renderer.is3D) this.renderer.camMode = save.cam === 'skra' ? 'skra' : 'side';
       this.input = new TR.Input();
       this.sfx = new TR.Sfx();
       this.sfx.enabled = save.sound !== false;
@@ -296,7 +300,7 @@
           R.popup(skill.fullName, { sub: `${skill.code} · DD ${TR.fmt(skill.dd)} · E ${TR.fmt(ev.E)} · ${grade}`, color: ev.E >= 1.9 ? '#ffd166' : '#ffffff' });
           if (ev.E >= 1.9) {
             R.burst(a.x, a.y + 0.6, 22, { kind: 'star', colors: ['#ffd166', '#ffffff', '#4cc9f0'], speed: 3.2, size: 0.07, life: 1.1, g: 2 });
-            if (this.arena === 'final') this.sfx.cheer();
+            if (this.arena === 'final' || R.is3D) this.sfx.cheer();
           }
           if (ev.ded.length && ev.E < 1.9) R.popup(ev.ded.map((d) => `${d.label} −${TR.fmt(d.v)}`).join(' · '), { color: '#ffb4c1', size: 0.45, max: 2.2 });
         }
@@ -352,6 +356,14 @@
       this.paused = false;
       if (this.ui) this.ui.onModeStart(mode);
     }
+
+    setCam(id) {
+      if (!this.renderer.is3D || !TR.CAMS.some((c) => c.id === id)) return;
+      this.renderer.camMode = id;
+      this.save.cam = id;
+      this.dirty = true;
+    }
+    toggleCam() { this.setCam(this.renderer.camMode === 'side' ? 'skra' : 'side'); }
 
     setArena(id) {
       if (!TR.stageOk(id)) return;
