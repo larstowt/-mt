@@ -54,6 +54,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 | `js/body.js` | Leddelt krop, positioner, massemidtpunkt og inertimomenter |
 | `js/athlete.js` | Fysik: dug, flugt, skruer, landing og styrt |
 | `js/render3d.js`, `vendor/three.min.js` | 3D-tegning (Finalearena) med three.js r128 (MIT) |
+| `js/human.js` | Springeren i 3D: én skulptureret krop (afstandsfelt → trekanter), bygget i baggrunden ved start og bøjet af spillets skelet |
 | `js/tricks.js` | Genkendelse af spring, FIG-koder, navne og sværhedsgrad |
 | `js/scoring.js` | Bedømmelse (D/E/T/H) og point |
 | `js/challenges.js` | Baner og udfordringer |

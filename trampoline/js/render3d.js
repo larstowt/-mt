@@ -21,7 +21,7 @@
     try { const c = document.createElement('canvas'); return !!(G.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl'))); } catch (e) { return false; }
   };
 
-  // ---------- Springeren: tilspidsede lemmer, drejet overkrop, hoved med hår og ansigt ----------
+  // ---------- Enkel springer (vises kort, mens den menneskelige figur bygges) ----------
   function makeAthlete(root, S) {
     const g = new THREE.Group(); root.add(g);
     const parts = [];
@@ -50,7 +50,7 @@
     const hip = new V(), sh = new V(), sl = new V(), sr = new V(), up = new V(), side = new V(), front = new V();
     const hc = new V(), nk = new V(), ns = new V(), hu = new V(), hf = new V(), hs = new V();
     const P = (W, i, out) => out.set(W[i * 3], W[i * 3 + 1], W[i * 3 + 2]);
-    return function update(W) {
+    function update(W) {
       for (const p of parts) {
         if (p.j != null) { P(W, p.j, p.m.position); continue; }
         P(W, p.a, a); P(W, p.b, b); d.subVectors(b, a); const len = d.length() || 1e-4;
@@ -69,7 +69,9 @@
       hu.subVectors(hc, nk).normalize(); hf.subVectors(ns, hc); hf.addScaledVector(hu, -hf.dot(hu)).normalize();
       hs.crossVectors(hu, hf).normalize();
       m4.makeBasis(hs, hu, hf); head.position.copy(hc); head.quaternion.setFromRotationMatrix(m4);
-    };
+    }
+    update.group = g;
+    return update;
   }
 
   // ---------- Trampolinen (FIG-mål) med dug, der bøjer ned under springeren ----------
@@ -119,8 +121,10 @@
     scene.add(new THREE.HemisphereLight(0x8899bb, 0x0b0d12, 0.35));
     const spot = new THREE.SpotLight(0xffffff, 2.2, 40, 0.42, 0.45, 1.2);
     spot.position.set(2, 12, 6); spot.target.position.set(0, 0.5, 0); spot.castShadow = true;
-    spot.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048); spot.shadow.bias = -0.0005;
+    spot.shadow.mapSize.set(small ? 1024 : 2048, small ? 1024 : 2048); spot.shadow.bias = -0.0003; spot.shadow.normalBias = 0.02;
     scene.add(spot, spot.target);
+    // let kantlys bagfra, så springeren træder frem mod den mørke baggrund
+    const rim = new THREE.DirectionalLight(0xbcd2ff, 0.55); rim.position.set(-4, 5, -8); scene.add(rim);
     for (const sx of [-1, 1]) { const s2 = new THREE.SpotLight(0x9fc3ff, 0.9, 40, 0.5, 0.6, 1.5); s2.position.set(sx * 9, 9, -2); s2.target.position.set(0, 1, 0); scene.add(s2, s2.target); }
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), std(0x1a1f29, 0.7)); floor.rotation.x = -Math.PI / 2; floor.position.y = BED.floor; floor.receiveShadow = true; scene.add(floor);
     for (const sx of [-1, 1]) { const m = new THREE.Mesh(new THREE.BoxGeometry(2, 0.2, 3), std(0x1f4fa3, 0.8)); m.position.set(sx * 3.7, BED.floor + 0.1, 0); m.receiveShadow = m.castShadow = true; scene.add(m); }
@@ -155,10 +159,17 @@
       this.scene = new THREE.Scene();
       makeArena(this.scene, this.small);
       this.bedUpdate = makeTrampoline(this.scene);
-      this.athleteUpdate = makeAthlete(this.scene, {
+      // Den enkle figur bruges, indtil den menneskelige figur (human.js) er bygget i baggrunden.
+      const simple = this.athleteUpdate = makeAthlete(this.scene, {
         skin: std(0xd99a70, 0.55), suit: std(0x1b4fb3, 0.28, 0.15), legs: std(0xf2f4f8, 0.6), feet: std(0xffffff, 0.6),
         hair: std(0x2b1d14, 0.8), eye: std(0x111111, 0.4),
       });
+      if (TR.Human) {
+        TR.Human.buildAsync().then((data) => {
+          this.athleteUpdate = TR.Human.makeMesh(THREE, this.scene, { data });
+          this.scene.remove(simple.group);
+        }).catch(() => {});
+      }
       // timing-ring på dugen (som i 2D): mål + ring, der skrumper ind
       const ringMat = (c) => new THREE.MeshBasicMaterial({ color: c, transparent: true, depthWrite: false, side: THREE.DoubleSide });
       this.ringTarget = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), ringMat(0xffffff));
