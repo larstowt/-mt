@@ -85,7 +85,7 @@
         case 'time': return this.start(() => g.startMode(new M.FreeMode(g, { time: 60 })));
         // Konkurrence: også altid fuldt trænet
         case 'routine': return this.start(() => g.startMode(new M.RoutineMode(g, { skills: TR.MAX_SKILLS })));
-        // Power Tumbling: eget spil på tumblingbanen
+        // Power Tumbling: sat på pause (ingen knap i menuen), koden ligger klar i tumbling.js
         case 'tumble': return this.start(() => g.startMode(new M.TumblingMode(g, {})), 'tumble');
         case 'menu':
           if (this.screen === 'help' && this.helpFromPause) { this.helpFromPause = false; return this.show('pause'); }
@@ -159,7 +159,7 @@
         <div class="grow">
           <div class="pname">${esc(s.name)}</div>
           <div class="xpbar"><i style="width:${Math.round(li.frac * 100)}%"></i></div>
-          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}, tumbling ${TR.fmt(s.best.tumble || 0, 2)}</div>
+          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
         </div>`;
       $('soundBtn').textContent = `Lyd: ${s.sound !== false ? 'til' : 'fra'}`;
       $('arenaList').innerHTML = TR.STAGES.map((a) => `<button class="arena ${a.id} ${this.game.arena === a.id ? 'sel' : ''}" data-arena="${a.id}">
