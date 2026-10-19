@@ -29,11 +29,6 @@
       const g = this.game;
       document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => { g.sfx.unlock(); g.sfx.click(); this.go(b.dataset.go); }));
       $('pauseBtn').addEventListener('click', () => this.pause());
-      if (g.renderer.is3D) {
-        $('camBtn').hidden = false;
-        $('camBtn').addEventListener('click', () => { g.toggleCam(); TR.persist(this.save); });
-        addEventListener('keydown', (e) => { if (e.code === 'KeyC' && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) { g.toggleCam(); TR.persist(this.save); if (this.screen === 'menu') this.renderMenu(); } });
-      }
       $('resumeBtn').addEventListener('click', () => this.resume());
       $('restartBtn').addEventListener('click', () => { if (this.lastStart) this.lastStart(); });
       $('quitBtn').addEventListener('click', () => this.toMenu());
@@ -158,15 +153,6 @@
           <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
         </div>`;
       $('soundBtn').textContent = `Lyd: ${s.sound !== false ? 'til' : 'fra'}`;
-      if (this.game.renderer.is3D) {
-        // 3D: vælg kamera i stedet for bane
-        $('arenaHead').textContent = 'Kamera';
-        const cur = this.game.renderer.camMode;
-        $('arenaList').innerHTML = TR.CAMS.map((c) => `<button class="arena cam-${c.id} ${cur === c.id ? 'sel' : ''}" data-cam="${c.id}">
-          <b>${esc(c.name)}</b><small>${esc(c.tagline)}</small></button>`).join('');
-        $('arenaList').querySelectorAll('[data-cam]').forEach((b) => b.addEventListener('click', () => { this.game.setCam(b.dataset.cam); TR.persist(this.save); this.renderMenu(); }));
-        return;
-      }
       $('arenaList').innerHTML = TR.STAGES.map((a) => `<button class="arena ${a.id} ${this.game.arena === a.id ? 'sel' : ''}" data-arena="${a.id}">
           <b>${esc(a.name)}</b><small>${esc(a.tagline)}</small></button>`).join('');
       $('arenaList').querySelectorAll('[data-arena]').forEach((b) => b.addEventListener('click', () => { this.game.setArena(b.dataset.arena); TR.persist(this.save); this.renderMenu(); }));

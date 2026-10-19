@@ -1,9 +1,9 @@
 // Service worker: gemmer spillet lokalt, så det kan spilles offline og installeres som app.
-const CACHE = 'trampolin-v44';
+const CACHE = 'trampolin-v45';
 const FILES = [
   './', 'index.html', 'style.css', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
   'js/core.js', 'js/body.js', 'js/tricks.js', 'js/athlete.js', 'js/scoring.js', 'js/challenges.js', 'js/share.js',
-  'js/input.js', 'js/audio.js', 'js/arenas.js', 'js/render.js', 'js/human.js', 'vendor/three.min.js', 'js/render3d.js', 'js/game.js', 'js/ui.js', 'js/main.js',
+  'js/input.js', 'js/audio.js', 'js/arenas.js', 'js/render.js', 'js/game.js', 'js/ui.js', 'js/main.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -11,7 +11,7 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('trampolin-v') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
 // Netværk først (så nye versioner slår igennem), cache som reserve offline.

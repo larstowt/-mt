@@ -39,8 +39,7 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 - **Realistiske højder i roligt tempo:** tyngdepunktet løftes ca. 3,6 m (flyvetid ~1,7 s) uden træning og ~5,3 m (~2,1 s) med fuld Kraft – som hos eliten. Højden holdes med gode satser og falder kun ved dårlig timing eller landing væk fra midten (op til 25 % ved kanten). Spillet kører i 70 % tempo, og kameraet følger med op.
 - **FIG-mål:** dug 4,28 × 2,14 m, ramme 5,05 × 2,91 m, 1,15 m over gulvet.
 - **Rigtig fysik:** impulsmomentet er bevaret i luften, så man roterer hurtigere, når man lukker. Dugen er en fjeder, der bøjer ned under fødderne.
-- **Grafik: 3D-finalearena (standard)** – spillet tegnes i 3D med three.js: mørk konkurrencehal med spotlys, skygger og publikum, FIG-trampolin med røde puder og en springer, der bevæger sig med spillets egen kropsmodel. Vælg kamera **Fra siden** eller **Skråt** på forsiden, med 🎥-knappen eller tasten C. Kan browseren ikke køre WebGL, bruges 2D-grafikken (Neon og Klubhallen) automatisk.
-- **Gemt 2D-version:** den sidste 2D-udgave kan stadig spilles i `2d/` (https://larstowt.github.io/-mt/2d/).
+- **Grafik: Neon** – springeren tegnes som en glødende silhuet, og dugen pulserer ved landing. To baner: **Neon** (standard) og **Klubhallen**, hvor samme springer og trampolin (samme form og størrelse) er tegnet i rigtige farver med lys og skygge – en herrespringer i blå trøje, hvide bukser og kort hår på en FIG-trampolin med stålstel, blå puder og sort dug.
 - **3D-krop tegnet fra siden:** skruer kan ses ordentligt (forfra/bagfra), og lemmerne tegnes i dybderækkefølge.
 - **Pointsystem som i FIG-trampolin:** D (sværhedsgrad), E (udførelse med fradrag), T (flyvetid) og H (placering). Springene får FIG-koder, fx `8 2 0 o` for en hel-ind lukket, og rigtige navne som Barani, Rudi, Randy, Miller og Triffus.
 - **Spiltyper:** fri leg med kombinationer og konkurrence med 10 elementer (begge altid fuldt trænet) samt 60 sekunders tidsløb.
@@ -53,8 +52,6 @@ Gamepad virker også (A = sats, X = lukket, Y = hoftebøjet, skulderknapper = sk
 |---|---|
 | `js/body.js` | Leddelt krop, positioner, massemidtpunkt og inertimomenter |
 | `js/athlete.js` | Fysik: dug, flugt, skruer, landing og styrt |
-| `js/render3d.js`, `vendor/three.min.js` | 3D-tegning (Finalearena) med three.js r128 (MIT) |
-| `js/human.js` | Springeren i 3D: én skulptureret krop (afstandsfelt → trekanter), bygget i baggrunden ved start og bøjet af spillets skelet |
 | `js/tricks.js` | Genkendelse af spring, FIG-koder, navne og sværhedsgrad |
 | `js/scoring.js` | Bedømmelse (D/E/T/H) og point |
 | `js/challenges.js` | Baner og udfordringer |

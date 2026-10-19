@@ -91,7 +91,6 @@
     sound: true,
     control: 'arcade',
     arena: 'neon',
-    cam: 'side', // 3D-kamera: 'side' (fra siden) eller 'skra' (skråt)
     seenHelp: false,
   });
   TR.loadSave = () => {
