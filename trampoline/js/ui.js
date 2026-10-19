@@ -99,7 +99,7 @@
       if (kind === 'tumble') {
         if (!this.save.seenTumble) {
           this.save.seenTumble = true; TR.persist(this.save);
-          this.toast(this.touch ? 'Tryk SATS for at løbe. Tryk SATS igen, hver gang prikken rammer den gule streg. I afslutningen: hold LUKKET, HOFTE eller STRAKT og slip for at åbne. SKRUE giver ½ skrue pr. tryk.' : 'Tryk MELLEMRUM for at løbe. Tryk igen, hver gang prikken rammer den gule streg. I afslutningen: hold S, D eller F og slip for at åbne. ↓ giver ½ skrue pr. tryk.', 9000);
+          this.toast(this.touch ? 'Tryk SATS for at løbe og igen, hver gang prikken rammer den gule streg (flikflak/whip). Tryk LUKKET, HOFTE eller STRAKT på stregen i stedet for en salto. Farten og timingen giver kraften i afsættet. I luften: hold positionen, slip for at åbne, SKRUE = ½ skrue.' : 'Tryk MELLEMRUM for at løbe og igen, hver gang prikken rammer den gule streg (flikflak/whip). Tryk S, D eller F på stregen i stedet for en salto. Farten og timingen giver kraften i afsættet. I luften: hold positionen, slip for at åbne, ↓ = ½ skrue.', 10000);
         }
         return fn();
       }

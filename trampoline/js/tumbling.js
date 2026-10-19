@@ -12,13 +12,8 @@
   const TRACK = 25, MAT0 = 24, MAT1 = 31.5, RUN0 = 1.5;
   const NSTEP = 4, STEP_T = 0.3;
   const N_ELEM = 8;
-  const EL = {
-    ro: { name: 'Araber', T: 0.55, len: (v) => Math.max(1.6, 0.32 * v), dd: 0.1, dv: 0 },
-    flik: { name: 'Flikflak', T: 0.42, len: (v) => 0.6 + 0.26 * v, dd: 0.1, dv: -0.05 },
-    whip: { name: 'Whip', T: 0.46, len: (v) => 0.9 + 0.3 * v, dd: 0.2, dv: -0.15 },
-  };
   const WHIP_V = 6.0, V_MIN = 3.9, V_MAX = 8.2;
-  // Timing af afsættene (sekunder fra takten)
+  // Timing af afsættene (sekunder fra takten). fin = ekstra kraft i et saltoafsæt.
   const TIMING = [
     { max: 0.06, label: 'Perfekt', dv: 0.35, ded: 0, fin: 1, color: '#ffd166' },
     { max: 0.13, label: 'God', dv: 0.15, ded: 0.1, fin: 0.5, color: '#80ffdb' },
@@ -26,27 +21,72 @@
   ];
   const MISS = { label: 'Glemt', dv: -0.9, ded: 0.5, fin: -0.8, color: '#9aa4bf' };
   const WINDOW = 0.25;
+  const vyOf = (v, fin) => 2.2 + 0.55 * v + 0.5 * fin; // lodret fart i et saltoafsæt
+  const VY_MAX = vyOf(V_MAX, 1);
 
   const UP = B.HAND.up, SIDE = B.HAND.side;
-  const CROUCH = { hip: 0.35, knee: 0.5, hand: UP };
-  const Yc = -B.lowest(B.toWorld(B.solve(CROUCH), 0, 0, 0, 0)).y; // kropsmidtpunktets højde i afsættet
+  const FWD = [0.3, 0.35, 0.08], BACK = [-0.15, -0.55, 0.1], DOWN = [0.02, -0.62, 0.06];
+  const CROUCH = { hip: 0.55, knee: 0.35, hand: FWD };
 
-  // Kropsposition i et mellemspring (u = 0..1)
-  function elemPose(kind, u) {
-    const P = (hip, knee, hand) => ({ hip, knee, hand });
-    if (kind === 'ro') {
-      if (u < 0.25) return P(lerp(0.2, 1.15, ease(u / 0.25)), 0.1 * (1 - u / 0.25), UP);
-      if (u < 0.6) return P(lerp(1.15, -0.25, ease((u - 0.25) / 0.35)), 0, UP);
-      if (u < 0.85) return P(lerp(-0.25, 0.25, ease((u - 0.6) / 0.25)), 0, UP);
-      const k = ease((u - 0.85) / 0.15);
-      return P(lerp(0.25, CROUCH.hip, k), lerp(0, CROUCH.knee, k), UP);
-    }
-    const arch = kind === 'flik' ? -0.45 : -0.3, whip = kind === 'whip';
-    if (u < 0.15) return P(lerp(CROUCH.hip, 0.1, ease(u / 0.15)), lerp(CROUCH.knee, 0, ease(u / 0.15)), UP);
-    if (u < 0.5) return P(lerp(0.1, arch, ease((u - 0.15) / 0.35)), 0, whip ? lh(UP, SIDE, ss(0.2, 0.5, u)) : UP);
-    if (u < 0.82) return P(lerp(arch, 0.3, ease((u - 0.5) / 0.32)), 0, whip ? lh(SIDE, UP, ss(0.6, 0.82, u)) : UP);
-    const k = ease((u - 0.82) / 0.18);
-    return P(lerp(0.3, CROUCH.hip, k), lerp(0, CROUCH.knee, k), UP);
+  // Nøglestillinger for mellemspringene. u = andel af elementet (fra fødderne rammer banen til næste gang),
+  // tau = overkroppens hældning (0 = lodret, + mod kørselsretningen), a = hvad der står fast på banen
+  // (F0: fødderne ved start, H: hænderne, F1: fødderne ved landing), psi = andel af en halv skrue.
+  const K = (u, tau, hip, knee, hand, a, psi = 1) => ({ u, tau, hip, knee, hand, a, psi });
+  const TD = 2 * Math.PI - 0.2; // landing: let foroverbøjet
+  const ELEM = {
+    // Araber: fra løbet ned på hænderne, ½ skrue over hovedet og snap ned med front mod tilløbet
+    ro: {
+      name: 'Araber', T: 0.6, dd: 0.1, dv: 0, len: (v) => Math.max(1.9, 0.36 * v), hand: 0.45,
+      keys: [
+        K(0, 0.15, 0.15, 0.45, FWD, 'F0', 0), K(0.12, 0.6, 0.6, 0.25, UP, 'F0', 0),
+        K(0.3, 1.8, 0.7, 0.05, UP, 'H', 0), K(0.42, 2.75, 0.05, 0, UP, 'H', 0.45), K(0.52, 3.3, -0.25, 0, UP, 'H', 0.85),
+        K(0.6, 3.8, -0.05, 0, UP, 'H', 1), K(0.69, 5.0, 0.85, 0.1, UP, null, 1), K(0.78, 5.75, 0.75, 0.3, FWD, null, 1), K(0.9, 6.0, 0.6, 0.3, FWD, null, 1),
+        K(1, TD, CROUCH.hip, CROUCH.knee, FWD, 'F1', 1),
+      ],
+    },
+    // Flikflak: sid tilbage, spring baglæns med svaj, hænderne i banen, gennem håndstand og snap ned
+    flik: {
+      name: 'Flikflak', T: 0.52, dd: 0.1, dv: -0.05, len: (v) => 0.75 + 0.24 * v, hand: 0.6,
+      keys: [
+        K(0, -0.2, CROUCH.hip, CROUCH.knee, FWD, 'F0'), K(0.1, 0.25, 0.95, 1.35, BACK, 'F0'), K(0.22, 0.65, 0.1, 0.3, UP, 'F0'),
+        K(0.34, 1.6, -0.6, 0.05, UP, null), K(0.46, 2.6, -0.55, 0, UP, 'H'), K(0.55, 3.15, -0.35, 0, UP, 'H'),
+        K(0.62, 3.75, 0.05, 0, UP, 'H'), K(0.7, 5.0, 0.85, 0.1, UP, null), K(0.79, 5.75, 0.75, 0.3, FWD, null), K(0.9, 6.0, 0.6, 0.3, FWD, null),
+        K(1, TD, CROUCH.hip, CROUCH.knee, FWD, 'F1'),
+      ],
+    },
+    // Whip (tempo-salto): lav, lang og hurtig salto uden hænder med svaj og armene ned langs siden
+    whip: {
+      name: 'Whip', T: 0.56, dd: 0.2, dv: -0.15, len: (v) => 1.0 + 0.3 * v, hand: 0.5,
+      keys: [
+        K(0, -0.2, CROUCH.hip, CROUCH.knee, FWD, 'F0'), K(0.1, 0.15, 0.7, 1.05, BACK, 'F0'), K(0.22, 0.7, 0, 0.2, [0.25, 0.4, 0.1], 'F0'),
+        K(0.4, 2.2, -0.6, 0.05, DOWN, null), K(0.6, 3.75, -0.5, 0, DOWN, null),
+        K(0.8, 5.4, 0.45, 0.2, FWD, null), K(1, TD, CROUCH.hip, CROUCH.knee, FWD, 'F1'),
+      ],
+    },
+  };
+  const EL = ELEM;
+
+  const torsoTilt = (W) => Math.atan2(W[I.sh * 3] - W[I.hip * 3], W[I.sh * 3 + 1] - W[I.hip * 3 + 1]);
+  const wrapPi = (a) => a - TAU * Math.round(a / TAU);
+  const footX = (W) => (W[I.ankleL * 3] + W[I.ankleR * 3]) / 2;
+  // Hvor langt over banen ligger fødderne / hænderne (lavest punkt minus radius)?
+  const footLow = (W) => Math.min(W[I.toeL * 3 + 1] - 0.03, W[I.toeR * 3 + 1] - 0.03, W[I.ankleL * 3 + 1] - 0.05, W[I.ankleR * 3 + 1] - 0.05);
+  const handLow = (W) => Math.min(W[I.handL * 3 + 1], W[I.handR * 3 + 1]) - 0.04;
+  const handX = (W) => (W[I.handL * 3] + W[I.handR * 3]) / 2;
+
+  // Interpolation mellem nøglestillingerne (Catmull-Rom for hældningen, så rotationen er jævn)
+  function keyAt(keys, u) {
+    let i = 0;
+    while (i < keys.length - 2 && u > keys[i + 1].u) i++;
+    const k0 = keys[i], k1 = keys[i + 1], s = clamp((u - k0.u) / (k1.u - k0.u), 0, 1), e = ease(s);
+    const km = keys[Math.max(0, i - 1)], kp = keys[Math.min(keys.length - 1, i + 2)];
+    const m0 = (k1.tau - km.tau) / Math.max(1e-6, k1.u - km.u) * (k1.u - k0.u), m1 = (kp.tau - k0.tau) / Math.max(1e-6, kp.u - k0.u) * (k1.u - k0.u);
+    const s2 = s * s, s3 = s2 * s;
+    const tau = (2 * s3 - 3 * s2 + 1) * k0.tau + (s3 - 2 * s2 + s) * m0 + (-2 * s3 + 3 * s2) * k1.tau + (s3 - s2) * m1;
+    return {
+      tau, hip: lerp(k0.hip, k1.hip, e), knee: lerp(k0.knee, k1.knee, e), hand: lh(k0.hand, k1.hand, e), psi: lerp(k0.psi, k1.psi, e),
+      a: k0.a && k0.a === k1.a ? k0.a : s <= 0 && k0.a ? k0.a : s >= 1 && k1.a ? k1.a : null,
+    };
   }
 
   // Løb: benene og armene sættes i hånden (kropsmodellen har ellers samlede ben)
@@ -94,13 +134,13 @@
 
     reset() {
       this.phase = 'ready'; this.t = 0; this.time = 0;
-      this.x = RUN0; this.v = 0; this.vTop = 0;
-      this.elements = []; // { kind, name, dd, q }
+      this.x = RUN0; this.y = 1; this.v = 0; this.vTop = 0; this.foot = RUN0;
+      this.elements = []; // { kind, name, dd, beat }
       this.beats = []; // { t, judged, q }
       this.ded = []; this.E = 10;
       this.seg = null; this.phi = 0; this.psi = 0;
-      this.prev = {}; this.early = null;
-      this.final = null; this.result = null; this.abort = null;
+      this.prev = {}; this.early = null; this.inp = {};
+      this.fly = null; this.result = null; this.abort = null;
       this.W = new Float64Array(B.N * 3);
       this.pose = { hip: 0.05, knee: 0.05, hand: B.HAND.straight.slice() };
       this.standWorld();
@@ -113,45 +153,55 @@
       this.y = low;
     }
 
-    // Næste elements art ud fra farten
+    // Næste element ud fra farten (salto vælges af springeren i takten)
     nextKind(v, n) { return n === 0 ? 'ro' : n >= N_ELEM - 1 ? 'final' : v >= WHIP_V ? 'whip' : 'flik'; }
 
-    // Forventede kommende takter (til rytmebanen): [{ t, label }]
+    // Hvornår lander springeren (kropsmidtpunktet tilbage i afsætshøjde)?
+    landETA() {
+      const f = this.fly, h = Math.max(0, this.y - 0.95);
+      return (f.vy + Math.sqrt(Math.max(0, f.vy * f.vy + 2 * GRAV * h))) / GRAV;
+    }
+
+    // Forventede kommende takter (til rytmebanen)
     upcoming(n = 4) {
       const out = [];
       for (const b of this.beats) if (this.time - b.t < 0.6) out.push({ t: b.t, label: b.label, q: b.q, done: true, idx: b.idx });
-      if (this.phase === 'ready') return out;
-      let t = this.seg ? this.seg.t0 + this.seg.T : this.time, k = this.elements.length, v = this.v;
+      if (this.phase === 'ready' || this.phase === 'land' || this.phase === 'stop' || this.phase === 'done' || this.abort) return out;
+      let t, k = this.elements.length;
       if (this.phase === 'run') t = this.runT0 + NSTEP * STEP_T;
-      if (this.phase === 'final' || this.phase === 'land' || this.phase === 'done' || this.abort) return out;
+      else if (this.phase === 'elem') t = this.seg.t0 + this.seg.T;
+      else if (this.phase === 'fly') { if (this.fly.final) return out; t = this.time + this.landETA(); }
       for (let i = 0; i < n && k < N_ELEM; i++, k++) {
-        const kind = this.nextKind(v, k);
-        out.push({ t, label: kind === 'final' ? 'Afslutning' : EL[kind].name, idx: k });
+        const kind = this.nextKind(this.v, k);
+        out.push({ t, label: kind === 'final' ? 'Afslutning' : ELEM[kind].name, idx: k, salto: kind !== 'ro' && kind !== 'final' });
         if (kind === 'final') break;
-        t += EL[kind].T;
+        t += ELEM[kind].T;
       }
       return out;
     }
 
     // Ét tidsskridt. inp: { push, tuck, pike, straight, twist }
     step(dt, inp) {
-      const press = inp.push && !this.prev.push, twistPress = inp.twist && !this.prev.twist;
-      this.prev = { push: inp.push, twist: inp.twist };
+      const shapeHeld = !!(inp.tuck || inp.pike || inp.straight);
+      const shapePress = (inp.tuck && !this.prev.tuck) || (inp.pike && !this.prev.pike) || (inp.straight && !this.prev.straight);
+      const press = (inp.push && !this.prev.push) || shapePress, twistPress = inp.twist && !this.prev.twist;
+      this.prev = { push: inp.push, twist: inp.twist, tuck: inp.tuck, pike: inp.pike, straight: inp.straight };
+      this.inp = inp; this.shapeHeld = shapeHeld;
       this.time += dt; this.t += dt;
       if (this.phase === 'ready') {
-        if (press) { this.phase = 'run'; this.runT0 = this.time; this.t = 0; this.emit('start'); }
+        if (inp.push && press) { this.phase = 'run'; this.runT0 = this.time; this.t = 0; this.emit('start'); }
         return this.standWorld();
       }
       // tryk: tidligt (før takten) gemmes, sent (efter takten) bedømmer den seneste takt
-      if (press) {
+      if (press && this.phase !== 'land' && this.phase !== 'stop' && this.phase !== 'done') {
         const open = this.beats.find((b) => !b.judged && this.time - b.t <= WINDOW);
         if (open) this.judge(open, this.time - open.t);
-        else this.early = this.time;
+        else this.early = { t: this.time, salto: shapePress };
       }
       for (const b of this.beats) if (!b.judged && this.time - b.t > WINDOW) this.judge(b, null);
       if (this.phase === 'run') return this.stepRun();
       if (this.phase === 'elem') return this.stepElem();
-      if (this.phase === 'final') return this.stepFinal(dt, inp, twistPress);
+      if (this.phase === 'fly') return this.stepFly(dt, inp, twistPress);
       if (this.phase === 'land' || this.phase === 'stop') return this.stepLand(dt);
       return this.standWorld();
     }
@@ -162,23 +212,30 @@
       this.x = RUN0 + (NSTEP * 1.45) * (u * u * 0.35 + u * 0.65);
       runWorld(u, this.x, this.W);
       this.y = this.W[I.hip * 3 + 1];
-      if (u >= 1) this.beat();
+      if (u >= 1) { this.foot = footX(this.W) + 0.15; this.beat(); }
     }
 
     // En takt: fødderne rammer banen, og næste element starter
     beat() {
       const n = this.elements.length;
-      const kind = this.abort ? 'stop' : this.nextKind(this.v, n);
-      const b = { t: this.time, judged: false, q: null, idx: n, label: kind === 'final' ? 'Afslutning' : kind === 'stop' ? '' : EL[kind].name };
+      const early = this.early && this.time - this.early.t <= WINDOW ? this.early : null;
+      const wantSalto = (early && early.salto) || this.shapeHeld;
+      let kind = this.abort ? 'stop' : this.nextKind(this.v, n);
+      if (kind === 'flik' || kind === 'whip') if (wantSalto) kind = 'salto';
+      const b = { t: this.time, judged: false, q: null, idx: n, label: kind === 'final' ? 'Afslutning' : kind === 'salto' ? 'Salto' : kind === 'stop' ? '' : ELEM[kind].name };
       if (kind !== 'stop') this.beats.push(b);
-      if (this.early != null && this.time - this.early <= WINDOW) { this.judge(b, this.early - this.time); }
+      if (early) this.judge(b, early.t - this.time);
       this.early = null;
-      this.emit('beat', { x: this.x });
+      this.emit('beat', { x: this.foot });
       if (kind === 'stop') return this.startStop();
-      if (kind === 'final') return this.startFinal(b);
-      const e = EL[kind];
+      if (kind === 'final' || kind === 'salto') return this.startFly(b, kind === 'final');
+      const e = ELEM[kind];
+      // overgang fra forrige stilling (fx efter en salto) glides ind over den første del af elementet
+      const k0 = e.keys[0], W = this.W;
+      const corr = this.phase === 'elem' ? null : { tau: wrapPi(torsoTilt(W) - k0.tau), pose: this.phase === 'fly' ? { hip: this.pose.hip, knee: this.pose.knee, hand: this.pose.hand.slice() } : null };
+      const L2 = e.len(this.v);
       this.elements.push({ kind, name: e.name, dd: e.dd, beat: b });
-      this.seg = { kind, t0: this.time, T: e.T, x0: this.x, L: e.len(this.v), phi0: this.phi, psi0: kind === 'ro' ? 0 : Math.PI };
+      this.seg = { kind, e, t0: this.time, T: e.T, x0: this.foot, xh: this.foot + e.hand * L2, x1: this.foot + L2, psi0: kind === 'ro' ? this.psi : this.psi - Math.PI, corr };
       this.v = clamp(this.v + e.dv, 0, V_MAX);
       this.phase = 'elem'; this.t = 0;
     }
@@ -188,64 +245,92 @@
       let r = MISS;
       if (off != null) for (const tm of TIMING) if (Math.abs(off) <= tm.max) { r = tm; break; }
       const label = r.label || (off < 0 ? 'For tidligt' : 'For sent');
-      b.q = label;
+      b.q = label; b.fin = r.fin;
       this.v = clamp(this.v + r.dv, 0, V_MAX);
       this.vTop = Math.max(this.vTop, this.v);
       if (r.ded) { this.E -= r.ded; this.ded.push({ label: `${label} (${b.label})`, v: r.ded }); }
-      if (this.final && this.final.beat === b && this.final.vy > 0) this.final.vy += 0.5 * r.fin;
-      if (!this.final && this.v < V_MIN && !this.abort) this.abort = 'Farten forsvandt';
+      // sent tryk i et saltoafsæt giver stadig (lidt) kraft, mens springeren er på vej op
+      if (this.fly && this.fly.beat === b && this.fly.vy > 0) { this.fly.vy += 0.5 * r.fin; this.fly.vyT += 0.5 * r.fin; this.emit('power', { pct: this.power() }); }
+      if (this.phase !== 'fly' && this.v < V_MIN && !this.abort) this.abort = 'Farten forsvandt';
       this.emit('timing', { label, color: r.color, q: r === MISS ? 0 : r.fin > 0 ? r.fin : 0.2, beat: b });
     }
 
+    // afsættets kraft i procent af det størst mulige (topfart og perfekt timing)
+    power() { return Math.round(100 * clamp(this.fly.vyT / VY_MAX, 0, 1)); }
+
+    // Kroppen i et mellemspring: stilling fra nøglerne, placering så hænder/fødder står fast
+    elemWorld(s, u, out) {
+      const k = keyAt(s.e.keys, u), c = s.corr, w = c ? 1 - ss(0, 0.3, u) : 0;
+      const pose = { hip: k.hip, knee: k.knee, hand: k.hand };
+      if (c && c.pose && w > 0) { pose.hip = lerp(pose.hip, c.pose.hip, w); pose.knee = lerp(pose.knee, c.pose.knee, w); pose.hand = lh(pose.hand, c.pose.hand, w); }
+      const tau = k.tau + (c ? c.tau * w : 0), psi = s.psi0 + Math.PI * k.psi;
+      const body = B.solve(pose);
+      const W0 = B.toWorld(body, psi, 0, 0, 0, out);
+      const phi = torsoTilt(W0) - tau;
+      const W = B.toWorld(body, psi, phi, 0, 0, out);
+      return { W, k, phi, psi, pose };
+    }
+    // Kropsmidtpunkt, når nøglens kontakt (fødder eller hænder) står på sin plads
+    anchorCOM(W, a, s) {
+      if (a === 'H') return [s.xh - handX(W), -handLow(W)];
+      return [(a === 'F0' ? s.x0 : s.x1) - footX(W), -footLow(W)];
+    }
+
     stepElem() {
-      const s = this.seg, u = clamp(this.t / s.T, 0, 1);
-      this.x = s.x0 + s.L * u;
-      this.phi = s.phi0 - TAU * u;
-      this.psi = s.psi0 + Math.PI * (s.kind === 'ro' ? ss(0.25, 0.7, u) : 0);
-      const W = B.toWorld(B.solve(elemPose(s.kind, u)), this.psi, this.phi, this.x, 0, this.W);
-      const low = -B.lowest(W).y;
-      let y;
-      if (s.kind === 'whip') { const h = (GRAV * s.T * s.T) / 8; y = Math.max(low, Yc + 4 * h * u * (1 - u)); }
-      else y = low + 0.24 * Math.pow(Math.sin(TAU * u), 2); // fødder → hænder → fødder
-      for (let i = 0; i < B.N; i++) W[i * 3 + 1] += y;
-      this.y = y;
-      if (u >= 1) { this.phi = s.phi0 - TAU; this.psi = Math.PI; this.beat(); }
+      const s = this.seg, u = clamp(this.t / s.T, 0, 1), keys = s.e.keys;
+      const r = this.elemWorld(s, u, this.W);
+      let cx, cy;
+      if (r.k.a) [cx, cy] = this.anchorCOM(r.W, r.k.a, s);
+      else {
+        // svæv: fra sidste kontakt til næste, langs en kastebane
+        let ip = 0, inx = keys.length - 1;
+        for (let i = 0; i < keys.length; i++) { if (keys[i].a && keys[i].u <= u) ip = i; }
+        for (let i = keys.length - 1; i >= 0; i--) { if (keys[i].a && keys[i].u >= u) inx = i; }
+        const up = keys[ip].u, un = keys[inx].u, tmp = new Float64Array(B.N * 3);
+        const pA = this.anchorCOM(this.elemWorld(s, up, tmp).W, keys[ip].a, s);
+        const pB = this.anchorCOM(this.elemWorld(s, un, tmp).W, keys[inx].a, s);
+        const q = clamp((u - up) / Math.max(1e-6, un - up), 0, 1), dur = (un - up) * s.T;
+        cx = lerp(pA[0], pB[0], q); cy = lerp(pA[1], pB[1], q) + (GRAV * dur * dur / 8) * 4 * q * (1 - q);
+      }
+      const W = r.W;
+      for (let i = 0; i < B.N; i++) { W[i * 3] += cx; W[i * 3 + 1] += cy; }
+      const low = B.lowest(W).y;
+      if (low < 0) { for (let i = 0; i < B.N; i++) W[i * 3 + 1] -= low; cy -= low; }
+      this.x = cx; this.y = cy; this.phi = r.phi; this.psi = r.psi; this.pose = r.pose;
+      if (u >= 1) { this.foot = s.x1; this.beat(); }
     }
 
-    startFinal(b) {
-      const v = this.v;
-      this.final = {
-        beat: b, vy: 2.2 + 0.55 * v, vx: 0.3 * v, omega: 6, phi0: this.phi, shapeT: { tuck: 0, pike: 0, straight: 0 },
-        twistGoal: 0, twistRate: 0, maxY: 0,
+    // Salto (midt i serien eller som afslutning): kraften kommer fra farten og timingen i afsættet
+    startFly(b, final) {
+      const v = this.v, fin = b.judged ? b.fin : 0;
+      const vy = vyOf(v, fin);
+      this.fly = {
+        beat: b, final, vy, vyT: vy, vx: 0.3 * v, omega: 8, phi0: this.phi, shapeT: { tuck: 0, pike: 0, straight: 0 },
+        twistGoal: 0, twistRate: 0, maxY: this.y, y0: this.y, psi0: this.psi,
       };
-      if (b.judged) { const r = TIMING.find((tm) => tm.label === b.q); this.final.vy += 0.5 * (r ? r.fin : b.q === 'Glemt' ? MISS.fin : -0.3); }
-      this.pose = { hip: CROUCH.hip, knee: CROUCH.knee, hand: UP.slice() };
-      this.psi = Math.PI; this.y = Yc;
-      this.phase = 'final'; this.t = 0;
-      this.emit('takeoff', { v });
+      this.phase = 'fly'; this.t = 0;
+      this.emit('takeoff', { v, pct: this.power(), final });
     }
 
-    stepFinal(dt, inp, twistPress) {
-      const f = this.final;
+    stepFly(dt, inp, twistPress) {
+      const f = this.fly;
       // skrue: ½ pr. tryk, ikke i hoftebøjet
-      const twisting = Math.abs(f.twistGoal - (this.psi - Math.PI)) > 0.02;
+      const twisting = Math.abs(f.twistGoal - (this.psi - f.psi0)) > 0.02;
       const shape = inp.tuck ? 'tuck' : twisting ? 'straight' : inp.pike ? 'pike' : inp.straight ? 'straight' : null;
       if (twistPress && shape !== 'pike') f.twistGoal += Math.PI;
       const tuckTwist = shape === 'tuck' && twisting;
       // rotation: positionen bestemmer farten, åben bremser brat (som på trampolinen)
       const boost = 1 + 0.06 * (this.v - 6);
-      const target = shape === 'tuck' ? (tuckTwist ? 8.5 : 11.5) * boost : shape === 'pike' ? 9.5 * boost : shape === 'straight' ? 6.2 * (twisting ? 0.8 : 1) : 2.0;
+      const target = shape === 'tuck' ? (tuckTwist ? 9.5 : 13) * boost : shape === 'pike' ? 11 * boost : shape === 'straight' ? 9.6 * boost * (twisting ? 0.85 : 1) : 2.0;
       if (f.omega < target) f.omega = Math.min(target, f.omega + 30 * dt); else f.omega = Math.max(target, f.omega - 60 * dt);
       this.phi -= f.omega * dt;
       if (shape) f.shapeT[shape] += dt * f.omega;
-      // skrue mod målet
-      const rem = f.twistGoal - (this.psi - Math.PI);
+      const rem = f.twistGoal - (this.psi - f.psi0);
       if (Math.abs(rem) > 1e-4) {
         const vmax = Math.min(12.5, Math.sqrt(2 * 160 * Math.abs(rem)));
         f.twistRate = Math.min(vmax, f.twistRate + 160 * dt);
         this.psi += Math.sign(rem) * Math.min(Math.abs(rem), f.twistRate * dt);
       } else f.twistRate = 0;
-      // krop
       let tg;
       if (tuckTwist) tg = { ...B.shapeTarget('tucktwist', 3), hand: B.HAND.tuckTwist };
       else if (shape === 'tuck') { tg = B.shapeTarget('tuck', 3); tg.hand = B.legGripTarget(tg, 0.3); }
@@ -254,25 +339,24 @@
       else tg = { hip: 0.1, knee: 0.05, hand: this.t < 0.15 ? UP : SIDE };
       const k = 1 - Math.exp(-12 * dt), p = this.pose;
       p.hip = lerp(p.hip, tg.hip, k); p.knee = lerp(p.knee, tg.knee, k); p.hand = lh(p.hand, tg.hand, k);
-      // flugt
       this.x += f.vx * dt; f.vy -= GRAV * dt; this.y += f.vy * dt;
       const W = B.toWorld(B.solve(p), this.psi, this.phi, this.x, this.y, this.W);
       f.maxY = Math.max(f.maxY, this.y);
       const low = B.lowest(W);
-      if (this.t < 0.1 && low.y < 0) { for (let i = 0; i < B.N; i++) W[i * 3 + 1] -= low.y; this.y -= low.y; return; }
-      if (f.vy < 0 && low.y <= 0) this.landFinal(low);
+      if (this.t < 0.12 && low.y < 0) { for (let i = 0; i < B.N; i++) W[i * 3 + 1] -= low.y; this.y -= low.y; return; }
+      if (f.vy < 0 && low.y <= 0) this.landFly(low);
     }
 
-    landFinal(low) {
-      const f = this.final, W = this.W;
+    landFly(low) {
+      const f = this.fly, W = this.W;
       for (let i = 0; i < B.N; i++) W[i * 3 + 1] -= low.y;
       this.y -= low.y;
       // hvor lodret står kroppen (fødder → skuldre)?
-      const ax = (W[I.ankleL * 3] + W[I.ankleR * 3]) / 2, ay = (W[I.ankleL * 3 + 1] + W[I.ankleR * 3 + 1]) / 2;
+      const ax = footX(W), ay = (W[I.ankleL * 3 + 1] + W[I.ankleR * 3 + 1]) / 2;
       const dev = Math.abs(Math.atan2(W[I.sh * 3] - ax, W[I.sh * 3 + 1] - ay));
       const turned = f.phi0 - this.phi, saltos = Math.max(0, Math.round(turned / TAU));
       const halves = Math.round(f.twistGoal / Math.PI);
-      const twistLeft = Math.abs(f.twistGoal - (this.psi - Math.PI));
+      const twistLeft = Math.abs(f.twistGoal - (this.psi - f.psi0));
       const shape = ['tuck', 'pike', 'straight'].reduce((a, b) => (f.shapeT[b] > f.shapeT[a] ? b : a), 'tuck');
       const sk = finalSkill(saltos, halves, shape);
       let landing, ded = 0, reason = '';
@@ -282,12 +366,26 @@
       else { landing = 'stand'; ded = Math.min(0.3, Math.round(dev / 0.12) * 0.1); }
       if (landing === 'fall') ded = 1.0;
       if (ded) { this.E -= ded; this.ded.push({ label: landing === 'fall' ? `Fald: ${reason}` : landing === 'step' ? 'Skridt i landingen' : 'Urolig landing', v: ded }); }
-      if (this.x < MAT0) { this.E -= 0.3; this.ded.push({ label: 'Landede før måtten', v: 0.3 }); }
-      this.elements.push({ kind: 'final', name: sk.name, dd: landing === 'fall' ? 0 : sk.dd, beat: f.beat, code: sk.code });
-      this.landing = { landing, dev, reason, skill: sk, height: f.maxY - Yc };
+      this.elements.push({ kind: 'salto', name: sk.name, dd: landing === 'fall' ? 0 : sk.dd, beat: f.beat, code: sk.code });
+      const land = { landing, dev, reason, skill: sk, height: f.maxY - f.y0, final: f.final };
+      // midt i serien: står han, fortsætter serien med næste element
+      if (!f.final && landing === 'stand') {
+        if (halves % 2) { land.landing = 'stop'; land.reason = 'Landede med front mod banen'; }
+        else if (saltos === 0) { land.landing = 'stop'; land.reason = 'Ingen salto'; }
+        else {
+          this.emit('land', land);
+          this.fly = null; this.foot = footX(W); this.v = clamp(this.v * 0.85, 0, V_MAX);
+          this.psi = Math.PI + Math.round((this.psi - Math.PI) / TAU) * TAU;
+          if (this.v < V_MIN) this.abort = 'Farten forsvandt';
+          return this.beat();
+        }
+      }
+      if (f.final && this.x < MAT0) { this.E -= 0.3; this.ded.push({ label: 'Landede før måtten', v: 0.3 }); }
+      if (!f.final && land.landing !== 'fall') { if (land.landing === 'step') land.reason = 'Skridt midt i serien'; land.landing = land.landing === 'step' ? 'step' : 'stop'; this.E -= 1.0; this.ded.push({ label: `Serien stoppede: ${land.reason}`, v: 1.0 }); }
+      this.landing = land;
       this.phase = 'land'; this.t = 0; this.landPose = { ...this.pose, hand: this.pose.hand.slice() };
       this.landPhi = this.phi; this.landY = this.y;
-      this.emit('land', this.landing);
+      this.emit('land', land);
     }
 
     startStop() {
@@ -301,20 +399,25 @@
       const u = clamp(this.t / 0.9, 0, 1), lp = this.landPose;
       const fall = this.landing.landing === 'fall';
       if (fall) {
-        // falder om på måtten
-        const up = Math.round(this.landPhi / TAU) * TAU; // under-roteret: falder bagover, over-roteret: forover
-        this.phi = lerp(this.landPhi, up + (this.landPhi > up ? 1.45 : -1.45), ease(Math.min(1, u * 1.6)));
+        // falder om til den side, han hælder til
         const p = { hip: lerp(lp.hip, 0.6, u), knee: lerp(lp.knee, 0.5, u), hand: lh(lp.hand, B.HAND.crash, u) };
+        const body = B.solve(p), tilt0 = torsoTilt(B.toWorld(body, this.psi, 0, 0, 0, this.W));
+        const cur = wrapPi(torsoTilt(B.toWorld(B.solve(lp), this.psi, this.landPhi, 0, 0, this.W)));
+        this.phi = tilt0 - lerp(cur, cur < 0 ? -1.45 : 1.45, ease(Math.min(1, u * 1.6)));
         this.x += dt * 0.6 * (1 - u);
-        const W = B.toWorld(B.solve(p), this.psi, this.phi, this.x, 0, this.W);
+        const W = B.toWorld(body, this.psi, this.phi, this.x, 0, this.W);
         const low = -B.lowest(W).y; for (let i = 0; i < B.N; i++) W[i * 3 + 1] += low;
       } else {
-        // fra landing til stand med armene op
+        // fra landing til stand med armene op (rejser sig op i stedet for at fortsætte)
         const k = ease(u), step = this.landing.landing === 'step' ? 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.5)) : 0;
-        this.phi = lerp(this.landPhi, Math.round(this.landPhi / TAU) * TAU, k);
-        this.x += dt * (this.landing.landing === 'stop' ? 0.8 : 0.4) * (1 - u);
         const p = { hip: lerp(Math.max(lp.hip, 0.45), 0.02, k), knee: lerp(Math.max(lp.knee, 0.7), 0.02, k), hand: lh(lp.hand, UP, ss(0.3, 1, u)) };
-        const W = B.toWorld(B.solve(p), this.psi, this.phi + step * 0.3, this.x, 0, this.W);
+        this.x += dt * (this.landing.landing === 'stop' ? 0.8 : 0.4) * (1 - u);
+        const body = B.solve(p);
+        // stå lodret: drej kroppen, så overkroppen går mod lodret
+        const tilt0 = torsoTilt(B.toWorld(body, this.psi, 0, 0, 0, this.W));
+        const cur = wrapPi(torsoTilt(B.toWorld(B.solve(lp), this.psi, this.landPhi, 0, 0, this.W)));
+        this.phi = tilt0 - lerp(cur, 0, k) - step * 0.3;
+        const W = B.toWorld(body, this.psi, this.phi, this.x, 0, this.W);
         const low = -B.lowest(W).y; for (let i = 0; i < B.N; i++) W[i * 3 + 1] += low;
       }
       this.y = this.W[I.hip * 3 + 1];
@@ -398,7 +501,9 @@
     c.globalAlpha = 1;
     c.fillStyle = 'rgba(255,255,255,.85)'; c.textAlign = top ? 'center' : 'right'; c.font = `600 ${Math.round(12 * scale)}px system-ui, sans-serif`;
     const key = touch ? 'SATS' : 'mellemrum';
-    const msg = sim.phase === 'land' || sim.phase === 'stop' || sim.phase === 'done' ? '' : sim.phase === 'ready' ? `Tryk ${key} for at løbe` : sim.phase === 'final' ? (touch ? 'Hold LUKKET, HOFTE eller STRAKT – slip for at åbne' : 'Hold S, D eller F – slip for at åbne · ↓ skrue') : `Tryk ${key}, når prikken rammer den gule streg`;
+    const msg = sim.phase === 'land' || sim.phase === 'stop' || sim.phase === 'done' ? '' : sim.phase === 'ready' ? `Tryk ${key} for at løbe`
+      : sim.phase === 'fly' ? (touch ? 'Hold LUKKET, HOFTE eller STRAKT – slip for at åbne · SKRUE' : 'Hold S, D eller F – slip for at åbne · ↓ skrue')
+        : touch ? 'SATS på stregen = flikflak/whip · LUKKET/HOFTE/STRAKT = salto' : 'Mellemrum på stregen = flikflak/whip · S/D/F = salto';
     c.fillText(msg, top ? (x0 + x1) / 2 : x1 - 12, top ? y + lh2 + 28 * scale : y - 26 * scale);
     c.restore();
     return hitX;
@@ -417,11 +522,15 @@
       sim.on('start', () => g.sfx.whoosh(0.4));
       sim.on('beat', ({ x }) => { g.sfx.bounce(3); R.burst(x, 0.02, 6, { up: true, speed: 1.2, color: 'rgba(255,255,255,0.7)', size: 0.025, life: 0.4 }); });
       sim.on('timing', ({ label, color, q }) => { this.flash.push({ label, color, t: 0 }); if (q > 0) g.sfx.sats(q); });
-      sim.on('takeoff', ({ v }) => g.sfx.whoosh(Math.min(1, v / 8)));
+      // afsættets kraft vises, når springeren letter til en salto
+      const showPower = (pct) => { this.pct = pct; this.flash.push({ label: `Afsæt ${pct} %`, color: pct >= 85 ? '#ffd166' : pct >= 70 ? '#80ffdb' : '#ffb4c1', t: 0, big: true }); };
+      sim.on('takeoff', ({ v, pct }) => { g.sfx.whoosh(Math.min(1, v / 8)); showPower(pct); });
+      sim.on('power', ({ pct }) => { this.pct = pct; });
       sim.on('land', (l) => {
         if (l.landing === 'fall') { g.sfx.crash(); R.shake = 0.5; R.popup(l.reason, { color: '#ff6b81', size: 0.8 }); }
         else if (l.landing !== 'stop') {
           g.sfx.land(l.landing === 'stand' ? 1.9 : 1.4);
+          if (!l.final && l.landing === 'stand') { R.popup(l.skill.name, { sub: 'Videre!', color: '#80ffdb', size: 0.7, max: 1.4 }); return; }
           R.popup(l.skill.name, { sub: l.landing === 'stand' ? 'Stand!' : 'Skridt i landingen', color: l.landing === 'stand' ? '#ffd166' : '#ffffff' });
           if (l.landing === 'stand') { g.sfx.cheer(); R.burst(sim.x, 1.4, 26, { kind: 'star', colors: ['#ffd166', '#ffffff', '#4cc9f0'], speed: 3.2, size: 0.07, life: 1.1, g: 2 }); }
         } else R.popup(l.reason, { color: '#9aa4bf', size: 0.7 });
@@ -435,7 +544,7 @@
     end(r) {
       const g = this.game;
       const res = {
-        title: r.landing.landing === 'fall' ? 'Faldt i afslutningen' : r.landing.landing === 'stop' ? 'Serien stoppede' : 'Serien er færdig',
+        title: r.landing.landing === 'fall' ? (r.landing.final ? 'Faldt i afslutningen' : 'Faldt midt i serien') : r.landing.landing === 'stop' ? 'Serien stoppede' : 'Serien er færdig',
         big: TR.fmt(r.total, 2), bigLabel: 'point',
         note: `${r.elements.length} af ${N_ELEM} elementer`,
         lines: [['D · sværhed', TR.fmt(r.D, 1)], ['E · udførelse', TR.fmt(r.E, 1)], ['Topfart', `${Math.round(r.vTop * 3.6)} km/t`]],
@@ -452,7 +561,7 @@
       const s = this.sim, r = s.totals();
       return {
         title: this.title, main: s.phase === 'ready' ? 'Klar' : `${Math.min(N_ELEM, s.elements.length)}/${N_ELEM}`,
-        sub: s.phase === 'ready' ? 'Tryk SATS for at løbe' : `D ${TR.fmt(r.D, 1)} · E ${TR.fmt(r.E, 1)}`,
+        sub: s.phase === 'ready' ? 'Tryk SATS for at løbe' : s.phase === 'fly' ? `Afsæt ${this.pct || 0} % · D ${TR.fmt(r.D, 1)}` : `D ${TR.fmt(r.D, 1)} · E ${TR.fmt(r.E, 1)}`,
         stat: `${Math.round(s.v * 3.6)} km/t`,
       };
     }
@@ -489,14 +598,17 @@
       ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (const f of this.flash) {
         f.t += dt;
-        ctx.globalAlpha = Math.max(0, 1 - f.t / 0.7);
-        ctx.font = `900 ${Math.round(24 * scale)}px system-ui, sans-serif`;
+        const life = f.big ? 1.3 : 0.7;
+        ctx.globalAlpha = Math.max(0, Math.min(1, (1 - f.t / life) * 2));
+        ctx.font = `900 ${Math.round((f.big ? 30 : 24) * scale)}px system-ui, sans-serif`;
         ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(10,12,30,.85)';
-        const y = top ? lane.y + laneH + 60 * scale + f.t * 30 : lane.y - 52 * scale - f.t * 40;
-        ctx.strokeText(f.label + '!', hitX, y); ctx.fillStyle = f.color; ctx.fillText(f.label + '!', hitX, y);
+        // kraften i afsættet vises ved springeren, timingen ved den gule streg
+        const x = f.big ? cam.sx(sim.x) : hitX, text = f.big ? f.label : f.label + '!';
+        const y = f.big ? Math.max(skyTop + 20 * scale, cam.sy(sim.y) - 1.4 * ppm) - f.t * 20 : top ? lane.y + laneH + 60 * scale + f.t * 30 : lane.y - 52 * scale - f.t * 40;
+        ctx.strokeText(text, x, y); ctx.fillStyle = f.color; ctx.fillText(text, x, y);
       }
       ctx.restore();
-      this.flash = this.flash.filter((f) => f.t < 0.7);
+      this.flash = this.flash.filter((f) => f.t < (f.big ? 1.3 : 0.7));
       R.drawPopups(ctx, cam, dt);
     }
   }

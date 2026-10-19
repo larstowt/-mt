@@ -13,7 +13,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css?v=2026.10.19-3">
+  <link rel="stylesheet" href="style.css?v=2026.10.19-4">
 </head>
 <body>
   <div id="app">
@@ -82,7 +82,7 @@
           <button class="pill" id="soundBtn">Lyd: til</button>
           <button class="pill" id="fullBtn" hidden>Fuld skærm</button>
         </div>
-        <p class="version muted small">Version 2026.10.19-3</p>
+        <p class="version muted small">Version 2026.10.19-4</p>
         <div class="arena-pick">
           <h3>Bane</h3>
           <div id="arenaList" class="arena-list"></div>
@@ -149,7 +149,14 @@
           <p><b>Rotationsmåleren</b> nederst viser, hvor meget rotation du lægger i fra dugen, og hvor mange saltoer det cirka rækker til i strakt og lukket. I luften viser den, hvor meget rotation du har.</p>
           <p><b>Skruer</b> laves strakt (<kbd>↓</kbd>) eller lukket (<kbd>↓</kbd> + <kbd>S</kbd>) – ikke hoftebøjet. Et tryk på <kbd>↓</kbd> i hoftebøjet giver ingen skrue, og trykker du <kbd>D</kbd> midt i en skrue, forbliver du strakt, til skruen er færdig. Strakt skruer hurtigst (ca. 2 skruer i sekundet uden træning). Mens du skruer strakt, roterer saltoen lidt langsommere. Hvert tryk på <kbd>↓</kbd> giver ½ skrue – tryk to gange for en hel skrue, fire gange for en dobbelt. Trykkene lægges i kø, og skruen stopper præcist, når den er færdig. Mens du skruer, fortsætter saltoen. I en lukket skrue trækker springeren armene ind og sidder mere åbent, så saltoen går lidt langsommere – når skruen er færdig, og du stadig holder <kbd>S</kbd>, lukker springeren sig tæt og roterer hurtigere igen (som en lukket full-in).</p>
           <h3>Power Tumbling</h3>
-          <p>På tumblingbanen løber du an og laver en serie på 8 elementer: araber, flikflak eller whips og til sidst en stor afslutning ned på måtten. Tryk <kbd>Mellemrum</kbd> (SATS) for at løbe, og tryk igen, hver gang prikken på rytmebanen rammer den gule streg – det er dér, fødderne rammer banen. <i>Perfekt</i> og <i>god</i> timing giver mere fart, for tidligt, for sent eller glemt taber fart. Med nok fart bliver flikflak til whips. Den 8. takt er afsættet til afslutningen: hold <kbd>S</kbd> lukket, <kbd>D</kbd> hoftebøjet eller <kbd>F</kbd> strakt for at rotere, slip for at åbne og bremse, og tryk <kbd>↓</kbd> for ½ skrue pr. tryk. Jo mere fart, jo højere kommer du – med god fart kan du nå en dobbelt salto, gerne med skrue. Point er D (sværhed) plus E (udførelse fra 10), hvor dårlig timing og en urolig landing trækker fra.</p>
+          <p>På tumblingbanen løber du an og laver en serie på 8 elementer ned ad banen og til sidst en afslutning ned på måtten. Tryk <kbd>Mellemrum</kbd> (SATS) for at løbe. Hver prik på rytmebanen er et afsæt – det er dér, fødderne rammer banen:</p>
+          <ul>
+            <li><b>Mellemrum på stregen</b> giver araber, flikflak eller whip (whips kommer af sig selv, når farten er høj nok).</li>
+            <li><b>S, D eller F på stregen</b> (LUKKET, HOFTE, STRAKT) giver i stedet en <b>salto</b> – også midt på banen, fx en dobbelt salto strakt. Lander du på fødderne, fortsætter serien; et skridt eller fald stopper den.</li>
+            <li><i>Perfekt</i> og <i>god</i> timing giver mere fart. For tidligt, for sent eller glemt taber fart, og bliver farten for lav, stopper serien.</li>
+          </ul>
+          <p><b>Kraften i afsættet</b> til en salto kommer fra to ting: <b>farten</b> (vises øverst i km/t – den bygger du op med god timing og whips) og <b>timingen af selve afsættet</b> (perfekt giver ekstra kraft). Når du letter, vises kraften som <i>Afsæt 89 %</i>. Med høj fart og perfekt timing kan du nå en dobbelt strakt eller en tredobbelt lukket.</p>
+          <p><b>I luften:</b> hold <kbd>S</kbd> lukket, <kbd>D</kbd> hoftebøjet eller <kbd>F</kbd> strakt for at rotere, slip for at åbne og bremse, og tryk <kbd>↓</kbd> for ½ skrue pr. tryk (midt i serien skal skruerne være hele, så du lander med ryggen mod banen). Den 8. takt er altid afslutningen. Point er D (sværhed) plus E (udførelse fra 10), hvor dårlig timing og en urolig landing trækker fra.</p>
           <h3>Point</h3>
           <p>Hvert spring bedømmes som i rigtig trampolin: <b>D</b> (sværhedsgrad), <b>E</b> (udførelse, max 2,0 pr. spring), <b>T</b> (flyvetid) og <b>H</b> (placering på dugen). Skæve landinger, ufærdige skruer, sen åbning og vandring giver fradrag.</p>
           <p>Springkoden følger FIG-systemet: antal kvarte saltoer, halve skruer pr. salto og position (<b>o</b> lukket, <b>&lt;</b> hoftebøjet, <b>/</b> strakt). Fx er <code>4 1 &lt;</code> en barani hoftebøjet og <code>8 2 0 o</code> en hel-ind lukket.</p>
@@ -205,20 +212,20 @@
     <div id="toast" class="toast" hidden></div>
   </div>
 
-  <script src="js/core.js?v=2026.10.19-3"></script>
-  <script src="js/body.js?v=2026.10.19-3"></script>
-  <script src="js/tricks.js?v=2026.10.19-3"></script>
-  <script src="js/athlete.js?v=2026.10.19-3"></script>
-  <script src="js/scoring.js?v=2026.10.19-3"></script>
-  <script src="js/challenges.js?v=2026.10.19-3"></script>
-  <script src="js/share.js?v=2026.10.19-3"></script>
-  <script src="js/input.js?v=2026.10.19-3"></script>
-  <script src="js/audio.js?v=2026.10.19-3"></script>
-  <script src="js/arenas.js?v=2026.10.19-3"></script>
-  <script src="js/render.js?v=2026.10.19-3"></script>
-  <script src="js/game.js?v=2026.10.19-3"></script>
-  <script src="js/tumbling.js?v=2026.10.19-3"></script>
-  <script src="js/ui.js?v=2026.10.19-3"></script>
-  <script src="js/main.js?v=2026.10.19-3"></script>
+  <script src="js/core.js?v=2026.10.19-4"></script>
+  <script src="js/body.js?v=2026.10.19-4"></script>
+  <script src="js/tricks.js?v=2026.10.19-4"></script>
+  <script src="js/athlete.js?v=2026.10.19-4"></script>
+  <script src="js/scoring.js?v=2026.10.19-4"></script>
+  <script src="js/challenges.js?v=2026.10.19-4"></script>
+  <script src="js/share.js?v=2026.10.19-4"></script>
+  <script src="js/input.js?v=2026.10.19-4"></script>
+  <script src="js/audio.js?v=2026.10.19-4"></script>
+  <script src="js/arenas.js?v=2026.10.19-4"></script>
+  <script src="js/render.js?v=2026.10.19-4"></script>
+  <script src="js/game.js?v=2026.10.19-4"></script>
+  <script src="js/tumbling.js?v=2026.10.19-4"></script>
+  <script src="js/ui.js?v=2026.10.19-4"></script>
+  <script src="js/main.js?v=2026.10.19-4"></script>
 </body>
 </html>
