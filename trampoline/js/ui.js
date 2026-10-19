@@ -85,6 +85,8 @@
         case 'time': return this.start(() => g.startMode(new M.FreeMode(g, { time: 60 })));
         // Konkurrence: også altid fuldt trænet
         case 'routine': return this.start(() => g.startMode(new M.RoutineMode(g, { skills: TR.MAX_SKILLS })));
+        // Power Tumbling: eget spil på tumblingbanen
+        case 'tumble': return this.start(() => g.startMode(new M.TumblingMode(g, {})), 'tumble');
         case 'menu':
           if (this.screen === 'help' && this.helpFromPause) { this.helpFromPause = false; return this.show('pause'); }
           return this.toMenu();
@@ -92,8 +94,15 @@
       }
     }
 
-    start(fn) {
+    start(fn, kind) {
       this.lastStart = fn;
+      if (kind === 'tumble') {
+        if (!this.save.seenTumble) {
+          this.save.seenTumble = true; TR.persist(this.save);
+          this.toast(this.touch ? 'Tryk SATS for at løbe. Tryk SATS igen, hver gang prikken rammer den gule streg. I afslutningen: hold LUKKET, HOFTE eller STRAKT og slip for at åbne. SKRUE giver ½ skrue pr. tryk.' : 'Tryk MELLEMRUM for at løbe. Tryk igen, hver gang prikken rammer den gule streg. I afslutningen: hold S, D eller F og slip for at åbne. ↓ giver ½ skrue pr. tryk.', 9000);
+        }
+        return fn();
+      }
       if (!this.save.seenHelp) {
         this.save.seenHelp = true; TR.persist(this.save);
         this.toast(this.touch ? 'Tryk SATS når ringen bliver gul. Hold ◀ eller ▶ for at lade rotation op, og slip for at bruge den. I luften: hold STRAKT, HOFTE, LUKKET eller SKRUE – slip for at bremse.' : 'Tryk MELLEMRUM når ringen bliver gul. Hold ← eller → for at lade rotation op, og slip for at bruge den. I luften: hold F strakt, D hoftebøjet, S lukket. Tryk ↓ for ½ skrue pr. tryk. Slip for at bremse.', 8000);
@@ -150,7 +159,7 @@
         <div class="grow">
           <div class="pname">${esc(s.name)}</div>
           <div class="xpbar"><i style="width:${Math.round(li.frac * 100)}%"></i></div>
-          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}</div>
+          <div class="muted small">${s.xp - li.cur} / ${li.next - li.cur} XP · Rekorder: fri ${s.best.free || 0}, 60 s ${s.best.time || 0}, rutine ${TR.fmt(s.best.routine || 0, 2)}, tumbling ${TR.fmt(s.best.tumble || 0, 2)}</div>
         </div>`;
       $('soundBtn').textContent = `Lyd: ${s.sound !== false ? 'til' : 'fra'}`;
       $('arenaList').innerHTML = TR.STAGES.map((a) => `<button class="arena ${a.id} ${this.game.arena === a.id ? 'sel' : ''}" data-arena="${a.id}">
@@ -316,8 +325,10 @@
     frame(dt) {
       const g = this.game;
       if (this.screen !== 'play' || !g.mode) return;
-      this.rotMeter();
-      const live = g.athlete.live();
+      const custom = !!g.mode.custom;
+      $('rotMeter').hidden = custom;
+      if (!custom) this.rotMeter();
+      const live = custom ? null : g.athlete.live();
       const lt = live ? TR.liveText(live) : '';
       if (lt !== this.lastLive) { $('live').textContent = lt; this.lastLive = lt; }
       this.hudT -= dt;
@@ -329,7 +340,7 @@
       $('hudSub').textContent = h.sub || '';
       $('hudGoal').textContent = h.goal || '';
       $('hudTimer').textContent = h.timer != null ? `⏱ ${Math.ceil(h.timer)} s · ` : '';
-      $('hudHeight').textContent = `${TR.fmt(g.athlete.height)} m`;
+      $('hudHeight').textContent = h.stat != null ? h.stat : `${TR.fmt(g.athlete.height)} m`;
       const rl = $('routineList');
       if (h.list) {
         rl.hidden = h.list.length === 0;

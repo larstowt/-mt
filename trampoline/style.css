@@ -74,6 +74,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .big-btn span { font-size: 24px; }
 .big-btn:hover, .big-btn:focus-visible { transform: translateY(-2px); background: rgba(40, 52, 110, 0.85); }
 .big-btn.primary { background: linear-gradient(135deg, #ff8c42, #e63946); border-color: transparent; }
+.big-btn.tumble { background: linear-gradient(135deg, #2f7be6, #1b4fb3); border-color: transparent; }
 .menu-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .pill {
   border: 1px solid var(--panel-border); background: rgba(255, 255, 255, 0.08); border-radius: 999px;

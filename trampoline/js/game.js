@@ -404,16 +404,22 @@
     frame(ts) {
       const dt = Math.min(0.05, this.last ? (ts - this.last) / 1000 : 0.016);
       this.last = ts;
+      // Spiltyper med egen simulering og tegning (Power Tumbling)
+      const custom = this.mode && this.mode.custom;
       if (!this.paused) {
-        this.acc += dt * this.timeScale;
-        let n = 0;
-        while (this.acc >= STEP && n < 40) {
-          this.athlete.step(STEP, this.stepInput(STEP));
-          this.acc -= STEP; n++;
+        if (custom) this.mode.step(dt * this.mode.timeScale, this.input.state());
+        else {
+          this.acc += dt * this.timeScale;
+          let n = 0;
+          while (this.acc >= STEP && n < 40) {
+            this.athlete.step(STEP, this.stepInput(STEP));
+            this.acc -= STEP; n++;
+          }
         }
         if (this.mode) this.mode.update(dt * this.timeScale);
       }
-      this.renderer.render(this, this.paused ? 0 : dt);
+      if (custom) this.mode.render(this.renderer, this.paused ? 0 : dt);
+      else this.renderer.render(this, this.paused ? 0 : dt);
       if (this.ui) this.ui.frame(dt);
       if (this.dirty && !this.persistTimer) {
         this.persistTimer = setTimeout(() => { TR.persist(this.save); this.dirty = false; this.persistTimer = null; }, 1500);
@@ -427,6 +433,6 @@
   }
 
   TR.Game = Game;
-  TR.Modes = { FreeMode, RoutineMode, ChallengeMode };
+  TR.Modes = { Mode, FreeMode, RoutineMode, ChallengeMode };
   TR.DemoBot = DemoBot;
 })(globalThis);

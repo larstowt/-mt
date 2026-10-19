@@ -86,7 +86,7 @@
     xp: 0,
     skills: { power: 0, rotation: 0, twist: 0, flex: 0, air: 0, landing: 0 },
     stars: {},
-    best: { free: 0, time: 0, routine: 0 },
+    best: { free: 0, time: 0, routine: 0, tumble: 0 },
     look: { suit: '#e63946', accent: '#ffd166', skin: '#f1c27d', hair: '#3b2a20' },
     sound: true,
     control: 'arcade',
