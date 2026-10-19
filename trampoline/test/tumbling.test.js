@@ -65,7 +65,7 @@ test('tumbling: sen timing taber fart, og glemte afsæt stopper serien', () => {
 });
 
 test('tumbling: for mange saltoer i forhold til farten giver fald', () => {
-  const { end } = run({ off: 0.1, saltos: 3 });
+  const { end } = run({ off: 0.1, saltos: 5 });
   assert.equal(end.landing.landing, 'fall');
 });
 
@@ -87,6 +87,14 @@ test('tumbling: hænderne står stille på banen i flikflakken', () => {
   const xs = hx.map((h) => h[0]), ys = hx.map((h) => h[1]);
   assert.ok(Math.max(...xs) - Math.min(...xs) < 0.02, 'hænderne glider ikke');
   assert.ok(Math.max(...ys) < 0.06, 'hænderne er i banen');
+});
+
+test('tumbling: med topfart og perfekt timing når man højt nok til en firdobbelt salto', () => {
+  const { end } = run({ off: 0, saltos: 4 });
+  assert.equal(end.landing.landing, 'stand', JSON.stringify(end.landing).slice(0, 120));
+  assert.equal(end.elements[7].name, 'Firdobbelt salto baglæns lukket');
+  assert.ok(end.landing.height > 3.5, `højde ${end.landing.height}`);
+  assert.ok(end.elements.length === 8);
 });
 
 test('tumbling: navn og sværhed for afslutningen', () => {

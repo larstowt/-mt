@@ -9,10 +9,10 @@
   const lh = (a, b, t) => [0, 1, 2].map((i) => lerp(a[i], b[i], t));
 
   // ---------- Bane og elementer ----------
-  const TRACK = 25, MAT0 = 24, MAT1 = 31.5, RUN0 = 1.5;
+  const TRACK = 25, MAT0 = 24, MAT1 = 32, RUN0 = 1.5;
   const NSTEP = 4, STEP_T = 0.3;
   const N_ELEM = 8;
-  const WHIP_V = 6.0, V_MIN = 3.9, V_MAX = 8.2;
+  const WHIP_V = 6.0, V_MIN = 3.9, V_MAX = 9.0;
   // Timing af afsættene (sekunder fra takten). fin = ekstra kraft i et saltoafsæt.
   const TIMING = [
     { max: 0.06, label: 'Perfekt', dv: 0.35, ded: 0, fin: 1, color: '#ffd166' },
@@ -21,7 +21,7 @@
   ];
   const MISS = { label: 'Glemt', dv: -0.9, ded: 0.5, fin: -0.8, color: '#9aa4bf' };
   const WINDOW = 0.25;
-  const vyOf = (v, fin) => 2.2 + 0.55 * v + 0.5 * fin; // lodret fart i et saltoafsæt
+  const vyOf = (v, fin) => 3.0 + 0.72 * v + 0.9 * fin; // lodret fart i et saltoafsæt
   const VY_MAX = vyOf(V_MAX, 1);
 
   const UP = B.HAND.up, SIDE = B.HAND.side;
@@ -117,12 +117,12 @@
   function finalSkill(saltos, halves, shape) {
     const s = Math.max(0, saltos);
     if (s === 0) return { name: halves ? `Strakt hop med ${halves / 2} skrue` : 'Strakt hop', dd: 0, short: 'Hop' };
-    const head = s === 1 ? 'Salto baglæns' : s === 2 ? 'Dobbelt salto baglæns' : s === 3 ? 'Tredobbelt salto baglæns' : `${s}-dobbelt salto baglæns`;
+    const head = ['', 'Salto baglæns', 'Dobbelt salto baglæns', 'Tredobbelt salto baglæns', 'Firdobbelt salto baglæns', 'Femdobbelt salto baglæns'][s] || `${s}-dobbelt salto baglæns`;
     const tw = halves === 0 ? '' : halves === 1 ? ' med ½ skrue' : halves === 2 ? ' med hel skrue' : halves % 2 === 0 ? ` med ${halves / 2} skruer` : ` med ${TR.fmt(halves / 2, 1)} skrue`;
-    const base = [0, 0.5, 2.0, 4.5, 7.5][Math.min(4, s)];
+    const base = [0, 0.5, 2.0, 4.5, 7.5, 11][Math.min(5, s)] + 4 * Math.max(0, s - 5);
     const pos = shape === 'tuck' ? 0 : shape === 'pike' ? 0.1 * s : 0.2 * s;
     const dd = base + pos + 0.2 * halves * s;
-    const short = s === 1 ? 'Salto' : s === 2 ? 'Dobbelt' : 'Tredobbelt';
+    const short = ['', 'Salto', 'Dobbelt', 'Tredobbelt', 'Firdobbelt', 'Femdobbelt'][Math.min(5, s)];
     return { name: `${head} ${POS[shape]}${tw}`, dd, short, code: `${s * 4}${halves ? ' ' + halves : ''} ${POS_SIGN[shape]}` };
   }
 
@@ -305,7 +305,7 @@
       const v = this.v, fin = b.judged ? b.fin : 0;
       const vy = vyOf(v, fin);
       this.fly = {
-        beat: b, final, vy, vyT: vy, vx: 0.3 * v, omega: 8, phi0: this.phi, shapeT: { tuck: 0, pike: 0, straight: 0 },
+        beat: b, final, vy, vyT: vy, vx: 0.22 * v, omega: 8, phi0: this.phi, shapeT: { tuck: 0, pike: 0, straight: 0 },
         twistGoal: 0, twistRate: 0, maxY: this.y, y0: this.y, psi0: this.psi,
       };
       this.phase = 'fly'; this.t = 0;
@@ -444,6 +444,20 @@
     wall.addColorStop(0, '#46557a'); wall.addColorStop(0.6, '#7d8aa6'); wall.addColorStop(1, '#a3a0a0');
     c.fillStyle = wall; c.fillRect(0, 0, W, fy);
     const px = (wx, k) => W / 2 + (wx - camX * k) * ppm;
+    // loft med bjælker og lamper (giver en fornemmelse af højden)
+    const cy = cam.sy(8.2);
+    if (cy > -0.6 * ppm) {
+      c.fillStyle = '#39445f'; c.fillRect(0, 0, W, Math.max(0, cy));
+      c.fillStyle = '#2b3349'; c.fillRect(0, cy, W, Math.max(2, 0.18 * ppm));
+      for (let i = -6; i < 40; i++) {
+        const x = px(i * 4, 0.85); if (x < -ppm || x > W + ppm) continue;
+        c.fillStyle = '#20263a'; c.fillRect(x - 0.02 * ppm, cy, 0.04 * ppm, 0.5 * ppm);
+        const g = c.createRadialGradient(x, cy + 0.55 * ppm, 1, x, cy + 0.55 * ppm, 0.9 * ppm);
+        g.addColorStop(0, 'rgba(255,250,225,.9)'); g.addColorStop(0.15, 'rgba(255,245,210,.35)'); g.addColorStop(1, 'rgba(255,245,210,0)');
+        c.fillStyle = g; c.fillRect(x - ppm, cy, 2 * ppm, 1.6 * ppm);
+        c.fillStyle = '#e9ecf2'; c.fillRect(x - 0.3 * ppm, cy + 0.48 * ppm, 0.6 * ppm, 0.08 * ppm);
+      }
+    }
     for (let i = -6; i < 40; i++) {
       const x = px(i * 3.2, 0.6), y = cam.sy(4.6);
       if (x < -3 * ppm || x > W + 3 * ppm) continue;
@@ -577,7 +591,7 @@
       const floorY = top ? H - Math.max(40, (R.safeBottom || 0) * 0.5) : lane.y - 40 * scale;
       const skyTop = top ? lane.y + laneH + 40 * scale : 60 * scale;
       // kamera: følger springeren lidt foran, zoomer ud i afslutningen
-      const want = clamp(sim.y + 2.4, 5.2, 8.5);
+      const want = clamp(sim.y + 2.4, 5.2, 12);
       this.viewH += (want - this.viewH) * Math.min(1, 2.5 * dt);
       const ppm = Math.min((floorY - skyTop) / (this.viewH - 0.3), W / 7);
       const ahead = sim.phase === 'final' || sim.phase === 'land' ? 0.3 : sim.phase === 'ready' ? 2 : 1.4;
