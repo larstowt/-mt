@@ -194,11 +194,11 @@
       }
       // tryk: tidligt (før takten) gemmes, sent (efter takten) bedømmer den seneste takt
       if (press && this.phase !== 'land' && this.phase !== 'stop' && this.phase !== 'done') {
-        const open = this.beats.find((b) => !b.judged && this.time - b.t <= WINDOW);
+        const open = this.beats.find((b) => !b.judged && this.time - b.t <= WINDOW * (b.easy || 1));
         if (open) this.judge(open, this.time - open.t);
         else this.early = { t: this.time, salto: shapePress };
       }
-      for (const b of this.beats) if (!b.judged && this.time - b.t > WINDOW) this.judge(b, null);
+      for (const b of this.beats) if (!b.judged && this.time - b.t > WINDOW * (b.easy || 1)) this.judge(b, null);
       if (this.phase === 'run') return this.stepRun();
       if (this.phase === 'elem') return this.stepElem();
       if (this.phase === 'fly') return this.stepFly(dt, inp, twistPress);
@@ -216,13 +216,13 @@
     }
 
     // En takt: fødderne rammer banen, og næste element starter
-    beat() {
+    beat(easy = 1) {
       const n = this.elements.length;
-      const early = this.early && this.time - this.early.t <= WINDOW ? this.early : null;
+      const early = this.early && this.time - this.early.t <= WINDOW * easy ? this.early : null;
       const wantSalto = (early && early.salto) || this.shapeHeld;
       let kind = this.abort ? 'stop' : this.nextKind(this.v, n);
       if (kind === 'flik' || kind === 'whip') if (wantSalto) kind = 'salto';
-      const b = { t: this.time, judged: false, q: null, idx: n, label: kind === 'final' ? 'Afslutning' : kind === 'salto' ? 'Salto' : kind === 'stop' ? '' : ELEM[kind].name };
+      const b = { t: this.time, judged: false, q: null, idx: n, easy, label: kind === 'final' ? 'Afslutning' : kind === 'salto' ? 'Salto' : kind === 'stop' ? '' : ELEM[kind].name };
       if (kind !== 'stop') this.beats.push(b);
       if (early) this.judge(b, early.t - this.time);
       this.early = null;
@@ -243,7 +243,7 @@
     judge(b, off) {
       b.judged = true;
       let r = MISS;
-      if (off != null) for (const tm of TIMING) if (Math.abs(off) <= tm.max) { r = tm; break; }
+      if (off != null) for (const tm of TIMING) if (Math.abs(off) <= tm.max * (b.easy || 1)) { r = tm; break; }
       const label = r.label || (off < 0 ? 'For tidligt' : 'For sent');
       b.q = label; b.fin = r.fin;
       this.v = clamp(this.v + r.dv, 0, V_MAX);
@@ -316,12 +316,21 @@
       const f = this.fly;
       // skrue: ½ pr. tryk, ikke i hoftebøjet
       const twisting = Math.abs(f.twistGoal - (this.psi - f.psi0)) > 0.02;
-      const shape = inp.tuck ? 'tuck' : twisting ? 'straight' : inp.pike ? 'pike' : inp.straight ? 'straight' : null;
+      let shape = inp.tuck ? 'tuck' : twisting ? 'straight' : inp.pike ? 'pike' : inp.straight ? 'straight' : null;
+      // midt i serien åbner springeren selv lige før landing, hvis knappen stadig holdes
+      const tLand = f.vy < 2 ? this.landETA() : 9;
+      if (!f.final && shape && !twisting && tLand < 0.22) shape = null;
       if (twistPress && shape !== 'pike') f.twistGoal += Math.PI;
       const tuckTwist = shape === 'tuck' && twisting;
       // rotation: positionen bestemmer farten, åben bremser brat (som på trampolinen)
       const boost = 1 + 0.06 * (this.v - 6);
-      const target = shape === 'tuck' ? (tuckTwist ? 9.5 : 13) * boost : shape === 'pike' ? 11 * boost : shape === 'straight' ? 9.6 * boost * (twisting ? 0.85 : 1) : 2.0;
+      let open = 2.0;
+      if (!shape && !f.final && this.t > 0.1) {
+        // landingshjælp midt i serien: åben rotation rettes ind, så han lander på fødderne
+        const turned = f.phi0 - this.phi, k = Math.max(1, Math.ceil(turned / TAU - 0.12));
+        open = clamp((k * TAU - turned) / Math.max(0.08, this.landETA()), 0.6, 4.5);
+      }
+      const target = shape === 'tuck' ? (tuckTwist ? 9.5 : 13) * boost : shape === 'pike' ? 11 * boost : shape === 'straight' ? 9.6 * boost * (twisting ? 0.85 : 1) : open;
       if (f.omega < target) f.omega = Math.min(target, f.omega + 30 * dt); else f.omega = Math.max(target, f.omega - 60 * dt);
       this.phi -= f.omega * dt;
       if (shape) f.shapeT[shape] += dt * f.omega;
@@ -360,24 +369,25 @@
       const shape = ['tuck', 'pike', 'straight'].reduce((a, b) => (f.shapeT[b] > f.shapeT[a] ? b : a), 'tuck');
       const sk = finalSkill(saltos, halves, shape);
       let landing, ded = 0, reason = '';
-      if (!low.feet || dev > 0.85 || this.pose.hip > 1.3) { landing = 'fall'; reason = !low.feet || dev > 0.85 ? (turned < TAU * saltos ? 'Under-roteret' : 'Over-roteret') : 'Landede lukket'; }
+      if (!low.feet || dev > (f.final ? 0.85 : 0.95) || this.pose.hip > 1.3) { landing = 'fall'; reason = !low.feet || dev > 0.85 ? (turned < TAU * saltos ? 'Under-roteret' : 'Over-roteret') : 'Landede lukket'; }
       else if (twistLeft > Math.PI / 4) { landing = 'fall'; reason = 'Skruen blev ikke færdig'; }
-      else if (dev > 0.42) { landing = 'step'; ded = 0.3; }
+      else if (dev > (f.final ? 0.42 : 0.6)) { landing = 'step'; ded = 0.3; }
       else { landing = 'stand'; ded = Math.min(0.3, Math.round(dev / 0.12) * 0.1); }
       if (landing === 'fall') ded = 1.0;
       if (ded) { this.E -= ded; this.ded.push({ label: landing === 'fall' ? `Fald: ${reason}` : landing === 'step' ? 'Skridt i landingen' : 'Urolig landing', v: ded }); }
       this.elements.push({ kind: 'salto', name: sk.name, dd: landing === 'fall' ? 0 : sk.dd, beat: f.beat, code: sk.code });
       const land = { landing, dev, reason, skill: sk, height: f.maxY - f.y0, final: f.final };
       // midt i serien: står han, fortsætter serien med næste element
-      if (!f.final && landing === 'stand') {
+      if (!f.final && (landing === 'stand' || landing === 'step')) {
         if (halves % 2) { land.landing = 'stop'; land.reason = 'Landede med front mod banen'; }
         else if (saltos === 0) { land.landing = 'stop'; land.reason = 'Ingen salto'; }
         else {
           this.emit('land', land);
-          this.fly = null; this.foot = footX(W); this.v = clamp(this.v * 0.85, 0, V_MAX);
+          // farten bevares næsten (et skridt koster lidt mere), og takten ved landingen er nemmere at ramme
+          this.fly = null; this.foot = footX(W); this.v = clamp(this.v - (landing === 'step' ? 0.5 : 0.1), 0, V_MAX);
           this.psi = Math.PI + Math.round((this.psi - Math.PI) / TAU) * TAU;
           if (this.v < V_MIN) this.abort = 'Farten forsvandt';
-          return this.beat();
+          return this.beat(1.6);
         }
       }
       if (f.final && this.x < MAT0) { this.E -= 0.3; this.ded.push({ label: 'Landede før måtten', v: 0.3 }); }
@@ -544,7 +554,7 @@
         if (l.landing === 'fall') { g.sfx.crash(); R.shake = 0.5; R.popup(l.reason, { color: '#ff6b81', size: 0.8 }); }
         else if (l.landing !== 'stop') {
           g.sfx.land(l.landing === 'stand' ? 1.9 : 1.4);
-          if (!l.final && l.landing === 'stand') { R.popup(l.skill.name, { sub: 'Videre!', color: '#80ffdb', size: 0.7, max: 1.4 }); return; }
+          if (!l.final && (l.landing === 'stand' || l.landing === 'step')) { R.popup(l.skill.name, { sub: l.landing === 'step' ? 'Skridt – videre!' : 'Videre!', color: '#80ffdb', size: 0.7, max: 1.4 }); return; }
           R.popup(l.skill.name, { sub: l.landing === 'stand' ? 'Stand!' : 'Skridt i landingen', color: l.landing === 'stand' ? '#ffd166' : '#ffffff' });
           if (l.landing === 'stand') { g.sfx.cheer(); R.burst(sim.x, 1.4, 26, { kind: 'star', colors: ['#ffd166', '#ffffff', '#4cc9f0'], speed: 3.2, size: 0.07, life: 1.1, g: 2 }); }
         } else R.popup(l.reason, { color: '#9aa4bf', size: 0.7 });

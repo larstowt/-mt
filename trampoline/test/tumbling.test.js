@@ -26,7 +26,7 @@ function run({ off = 0, miss = [], shape = 'tuck', saltos = 2, twists = 0, mid =
       if (f !== lastFly) { lastFly = f; held = true; twistsDone = 0; plan = f.final ? { shape, saltos, twists } : { twists: 0, ...mid[f.beat.idx] }; }
       const rem = plan.saltos * 2 * Math.PI - (f.phi0 - sim.phi);
       const tLand = sim.landETA();
-      if (held && rem < 2.0 * tLand + (f.omega * f.omega - 4) / 120) held = false;
+      if (held && rem < 2.0 * tLand + (f.omega * f.omega - 4) / 120 + (plan.sloppy || 0)) held = false;
       if (held) inp[plan.shape] = true;
       if (twistsDone < plan.twists * 2 && sim.t > 0.15 && Math.floor(sim.t * 30) % 2 === 0 && !sim.prev.twist) { inp.twist = true; twistsDone++; }
     }
@@ -53,6 +53,15 @@ test('tumbling: dobbelt salto strakt midt i serien, og serien fortsætter bageft
   assert.equal(end.elements.length, 8);
   assert.ok(['flik', 'whip'].includes(end.elements[5].kind), 'videre med flikflak/whip');
   assert.equal(end.landing.landing, 'stand');
+});
+
+test('tumbling: midt i serien hjælper springeren med landingen og beholder farten', () => {
+  for (const sloppy of [-1.2, 1.2]) {
+    const { end, lands } = run({ off: 0, mid: { 3: { shape: 'straight', saltos: 2, sloppy } } });
+    assert.ok(['stand', 'step'].includes(lands[0].landing), `åbnet ${sloppy}: ${lands[0].landing}`);
+    assert.equal(end.elements.length, 8);
+    assert.ok(end.vTop > 6.3, `fart ${end.vTop}`);
+  }
 });
 
 test('tumbling: sen timing taber fart, og glemte afsæt stopper serien', () => {
