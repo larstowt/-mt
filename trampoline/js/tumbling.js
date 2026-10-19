@@ -192,13 +192,16 @@
         if (inp.push && press) { this.phase = 'run'; this.runT0 = this.time; this.t = 0; this.emit('start'); }
         return this.standWorld();
       }
-      // tryk: tidligt (før takten) gemmes, sent (efter takten) bedømmer den seneste takt
+      // Mellemspringene kører af sig selv. Et tryk på stregen giver et højt spring (salto):
+      // tidligt (før takten) gemmes til takten, lidt sent laver flikflakken/whippen om til et højt spring.
       if (press && this.phase !== 'land' && this.phase !== 'stop' && this.phase !== 'done') {
         const open = this.beats.find((b) => !b.judged && this.time - b.t <= WINDOW * (b.easy || 1));
-        if (open) this.judge(open, this.time - open.t);
-        else this.early = { t: this.time, salto: shapePress };
+        if (open) {
+          if (open.auto && this.phase === 'elem' && this.seg.beat === open && this.t < 0.22 * this.seg.T) this.toFly(open);
+          this.judge(open, this.time - open.t);
+        } else this.early = { t: this.time };
       }
-      for (const b of this.beats) if (!b.judged && this.time - b.t > WINDOW * (b.easy || 1)) this.judge(b, null);
+      for (const b of this.beats) if (!b.judged && this.time - b.t > WINDOW * (b.easy || 1)) { if (b.auto) this.autoJudge(b); else this.judge(b, null); }
       if (this.phase === 'run') return this.stepRun();
       if (this.phase === 'elem') return this.stepElem();
       if (this.phase === 'fly') return this.stepFly(dt, inp, twistPress);
@@ -219,10 +222,10 @@
     beat(easy = 1) {
       const n = this.elements.length;
       const early = this.early && this.time - this.early.t <= WINDOW * easy ? this.early : null;
-      const wantSalto = (early && early.salto) || this.shapeHeld;
+      const wantSalto = !!early || this.shapeHeld;
       let kind = this.abort ? 'stop' : this.nextKind(this.v, n);
       if (kind === 'flik' || kind === 'whip') if (wantSalto) kind = 'salto';
-      const b = { t: this.time, judged: false, q: null, idx: n, easy, label: kind === 'final' ? 'Afslutning' : kind === 'salto' ? 'Salto' : kind === 'stop' ? '' : ELEM[kind].name };
+      const b = { t: this.time, judged: false, q: null, idx: n, easy, auto: !early, label: kind === 'final' ? 'Afslutning' : kind === 'salto' ? 'Salto' : kind === 'stop' ? '' : ELEM[kind].name };
       if (kind !== 'stop') this.beats.push(b);
       if (early) this.judge(b, early.t - this.time);
       this.early = null;
@@ -235,9 +238,24 @@
       const corr = this.phase === 'elem' ? null : { tau: wrapPi(torsoTilt(W) - k0.tau), pose: this.phase === 'fly' ? { hip: this.pose.hip, knee: this.pose.knee, hand: this.pose.hand.slice() } : null };
       const L2 = e.len(this.v);
       this.elements.push({ kind, name: e.name, dd: e.dd, beat: b });
-      this.seg = { kind, e, t0: this.time, T: e.T, x0: this.foot, xh: this.foot + e.hand * L2, x1: this.foot + L2, psi0: kind === 'ro' ? this.psi : this.psi - Math.PI, corr };
+      this.seg = { kind, e, beat: b, t0: this.time, T: e.T, x0: this.foot, xh: this.foot + e.hand * L2, x1: this.foot + L2, psi0: kind === 'ro' ? this.psi : this.psi - Math.PI, corr };
       this.v = clamp(this.v + e.dv, 0, V_MAX);
       this.phase = 'elem'; this.t = 0;
+    }
+
+    // Takt uden tryk: elementet kører af sig selv og holder farten oppe
+    autoJudge(b) {
+      b.judged = true;
+      this.v = clamp(this.v + 0.2, 0, V_MAX);
+      this.vTop = Math.max(this.vTop, this.v);
+    }
+
+    // Sent tryk, mens fødderne stadig er i banen: flikflakken/whippen bliver til et højt spring
+    toFly(b) {
+      this.elements.pop();
+      this.v = clamp(this.v - this.seg.e.dv, 0, V_MAX);
+      b.label = 'Salto'; b.auto = false;
+      this.startFly(b, false);
     }
 
     judge(b, off) {
@@ -527,7 +545,7 @@
     const key = touch ? 'SATS' : 'mellemrum';
     const msg = sim.phase === 'land' || sim.phase === 'stop' || sim.phase === 'done' ? '' : sim.phase === 'ready' ? `Tryk ${key} for at løbe`
       : sim.phase === 'fly' ? (touch ? 'Hold LUKKET, HOFTE eller STRAKT – slip for at åbne · SKRUE' : 'Hold S, D eller F – slip for at åbne · ↓ skrue')
-        : touch ? 'SATS på stregen = flikflak/whip · LUKKET/HOFTE/STRAKT = salto' : 'Mellemrum på stregen = flikflak/whip · S/D/F = salto';
+        : touch ? 'Tryk SATS på stregen for et højt spring' : 'Tryk mellemrum på stregen for et højt spring';
     c.fillText(msg, top ? (x0 + x1) / 2 : x1 - 12, top ? y + lh2 + 28 * scale : y - 26 * scale);
     c.restore();
     return hitX;

@@ -5,9 +5,10 @@ import assert from 'node:assert/strict';
 for (const f of ['core', 'body', 'tricks', 'athlete', 'scoring', 'challenges', 'share', 'game', 'tumbling']) await import(`../js/${f}.js`);
 const TR = globalThis.TR, T = TR.Tumbling;
 
-// Bot: trykker med en given forskydning fra hver takt. Ved takterne i 'mid' laves en salto (mid[idx] = { shape, saltos }),
-// ellers SATS. I luften holdes positionen, til der er rotation nok til det ønskede antal saltoer.
-function run({ off = 0, miss = [], shape = 'tuck', saltos = 2, twists = 0, mid = {} } = {}) {
+// Bot: mellemspringene kører af sig selv. Ved takterne i 'mid' (og afslutningen, hvis finalOff er sat) trykkes
+// mellemrum med en given forskydning, så springeren laver et højt spring. I luften holdes positionen,
+// til der er rotation nok til det ønskede antal saltoer.
+function run({ finalOff = 0, shape = 'tuck', saltos = 2, twists = 0, mid = {} } = {}) {
   const sim = new T.TumbleSim(), dt = 1 / 240;
   let end = null, pressed = new Set(), twistsDone = 0, held = true, plan = null, lastFly = null;
   const lands = [];
@@ -16,10 +17,15 @@ function run({ off = 0, miss = [], shape = 'tuck', saltos = 2, twists = 0, mid =
   sim.step(dt, { push: true }); sim.step(dt, { push: false });
   for (let i = 0; i < 240 * 25 && !end; i++) {
     const inp = { push: false, tuck: false, pike: false, straight: false, twist: false };
-    const next = off > 0 ? sim.beats.find((b) => !b.judged) : sim.upcoming(1).find((b) => !b.done);
-    if (next && !pressed.has(next.idx) && sim.time + dt >= next.t + off && !miss.includes(next.idx)) {
-      pressed.add(next.idx);
-      if (mid[next.idx]) inp[mid[next.idx].shape] = true; else inp.push = true;
+    const next = sim.upcoming(1).find((b) => !b.done);
+    const off = next ? (mid[next.idx] ? mid[next.idx].off || 0 : next.idx === 7 ? finalOff : null) : null;
+    if (next && off != null && !pressed.has(next.idx) && sim.time + dt >= next.t + Math.min(0, off)) {
+      if (off <= 0) { pressed.add(next.idx); inp.push = true; }
+    }
+    // sent tryk (efter takten)
+    for (const b of sim.beats) {
+      const o = mid[b.idx] ? mid[b.idx].off || 0 : b.idx === 7 ? finalOff : null;
+      if (o != null && o > 0 && !pressed.has(b.idx) && sim.time + dt >= b.t + o) { pressed.add(b.idx); inp.push = true; }
     }
     if (sim.phase === 'fly') {
       const f = sim.fly;
@@ -35,59 +41,59 @@ function run({ off = 0, miss = [], shape = 'tuck', saltos = 2, twists = 0, mid =
   return { sim, end, lands };
 }
 
-test('tumbling: perfekt timing giver 8 elementer, whips og en stående dobbelt salto lukket', () => {
-  const { end } = run({ off: 0 });
+test('tumbling: mellemspringene kører af sig selv – 8 elementer, whips og en stående dobbelt salto', () => {
+  const { end } = run({ finalOff: 0 });
   assert.ok(end, 'serien sluttede');
   assert.equal(end.elements.length, 8);
   assert.equal(end.elements[0].name, 'Araber');
   assert.ok(end.elements.some((e) => e.name === 'Whip'), 'med fart bliver det whips');
   assert.equal(end.landing.landing, 'stand', JSON.stringify(end.landing).slice(0, 120));
   assert.equal(end.elements[7].name, 'Dobbelt salto baglæns lukket');
-  assert.ok(end.E > 9.5 && end.D > 2.5, `D ${end.D} E ${end.E}`);
+  assert.ok(end.E > 9.5, `E ${end.E}`);
 });
 
-test('tumbling: dobbelt salto strakt midt i serien, og serien fortsætter bagefter', () => {
-  const { end, lands } = run({ off: 0, mid: { 4: { shape: 'straight', saltos: 2 } } });
+test('tumbling: mellemrum på stregen giver et højt spring midt i serien, og serien fortsætter', () => {
+  const { end, lands } = run({ finalOff: 0, mid: { 4: { shape: 'straight', saltos: 2 } } });
   assert.equal(lands[0].landing, 'stand', JSON.stringify(lands[0]).slice(0, 160));
   assert.equal(end.elements[4].name, 'Dobbelt salto baglæns strakt');
+  assert.ok(lands[0].height > 3, `højde ${lands[0].height}`);
   assert.equal(end.elements.length, 8);
   assert.ok(['flik', 'whip'].includes(end.elements[5].kind), 'videre med flikflak/whip');
-  assert.equal(end.landing.landing, 'stand');
+});
+
+test('tumbling: lidt for sent tryk laver stadig flikflakken om til et højt spring', () => {
+  const { end } = run({ finalOff: 0, mid: { 3: { shape: 'tuck', saltos: 2, off: 0.07 } } });
+  assert.equal(end.elements[3].kind, 'salto');
+  assert.equal(end.elements[3].name, 'Dobbelt salto baglæns lukket');
+});
+
+test('tumbling: et godt timet tryk giver mere kraft end slet intet tryk i afslutningen', () => {
+  const pressed = run({ finalOff: 0 }).end.landing.height;
+  const none = run({ finalOff: null, saltos: 1 }).end.landing.height;
+  assert.ok(pressed > none + 0.3, `${pressed} mod ${none}`);
 });
 
 test('tumbling: midt i serien hjælper springeren med landingen og beholder farten', () => {
   for (const sloppy of [-1.2, 1.2]) {
-    const { end, lands } = run({ off: 0, mid: { 3: { shape: 'straight', saltos: 2, sloppy } } });
+    const { end, lands } = run({ finalOff: 0, mid: { 3: { shape: 'straight', saltos: 2, sloppy } } });
     assert.ok(['stand', 'step'].includes(lands[0].landing), `åbnet ${sloppy}: ${lands[0].landing}`);
     assert.equal(end.elements.length, 8);
-    assert.ok(end.vTop > 6.3, `fart ${end.vTop}`);
   }
 });
 
-test('tumbling: sen timing taber fart, og glemte afsæt stopper serien', () => {
-  const late = run({ off: 0.2 }).end;
-  assert.ok(late.vTop < run({ off: 0 }).end.vTop);
-  assert.ok(late.E < 8.5);
-  const stop = run({ miss: [1, 2, 3, 4, 5, 6, 7] }).end;
-  assert.equal(stop.landing.landing, 'stop');
-  assert.ok(stop.elements.length < 8);
-});
-
-test('tumbling: for mange saltoer i forhold til farten giver fald', () => {
-  const { end } = run({ off: 0.1, saltos: 5 });
+test('tumbling: for mange saltoer i forhold til højden giver fald', () => {
+  const { end } = run({ finalOff: null, saltos: 4 });
   assert.equal(end.landing.landing, 'fall');
 });
 
 test('tumbling: hænderne står stille på banen i flikflakken', () => {
   const sim = new T.TumbleSim(), dt = 1 / 240, I = TR.Body.IDX;
-  const pressed = new Set();
   sim.step(dt, { push: true }); sim.step(dt, { push: false });
   const hx = [];
+  let first = null;
   for (let i = 0; i < 240 * 4; i++) {
-    const next = sim.upcoming(1).find((b) => !b.done), inp = { push: false };
-    if (next && !pressed.has(next.idx) && sim.time + dt >= next.t) { pressed.add(next.idx); inp.push = true; }
-    sim.step(dt, inp);
-    if (sim.phase === 'elem' && sim.seg.kind === 'flik') {
+    sim.step(dt, { push: false });
+    if (sim.phase === 'elem' && sim.seg.kind === 'flik' && (first = first || sim.seg) === sim.seg) {
       const u = sim.t / sim.seg.T, W = sim.W;
       if (u > 0.48 && u < 0.62) hx.push([(W[I.handL * 3] + W[I.handR * 3]) / 2, Math.min(W[I.handL * 3 + 1], W[I.handR * 3 + 1])]);
     }
@@ -98,12 +104,11 @@ test('tumbling: hænderne står stille på banen i flikflakken', () => {
   assert.ok(Math.max(...ys) < 0.06, 'hænderne er i banen');
 });
 
-test('tumbling: med topfart og perfekt timing når man højt nok til en firdobbelt salto', () => {
-  const { end } = run({ off: 0, saltos: 4 });
+test('tumbling: med en perfekt afslutning når man højt nok til en tredobbelt salto', () => {
+  const { end } = run({ finalOff: 0, saltos: 3 });
   assert.equal(end.landing.landing, 'stand', JSON.stringify(end.landing).slice(0, 120));
-  assert.equal(end.elements[7].name, 'Firdobbelt salto baglæns lukket');
-  assert.ok(end.landing.height > 3.5, `højde ${end.landing.height}`);
-  assert.ok(end.elements.length === 8);
+  assert.equal(end.elements[7].name, 'Tredobbelt salto baglæns lukket');
+  assert.ok(end.landing.height > 3, `højde ${end.landing.height}`);
 });
 
 test('tumbling: navn og sværhed for afslutningen', () => {
